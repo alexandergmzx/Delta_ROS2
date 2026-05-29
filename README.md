@@ -6,7 +6,7 @@ ROS2 Humble workspace for a parallel-kinematic Delta robot simulation using RViz
 
 - `delta_robot_description`: URDF, meshes, RViz configuration, and launch files.
 - `delta_robot_serial`: inverse kinematics service, joint-state publisher, pseudo-Arduino emulator, and trajectory action server.
-- `delta_robot_ui`: FastAPI browser dashboard for simulation control, jogging, waypoint sequences, CSV paths, and demo presets.
+- `delta_robot_ui`: FastAPI + React browser dashboard for simulation control, live state, waypoint sequences, and demo presets.
 - `serial`: vendored C++ serial library used by the pseudo/hardware serial path.
 
 ## Python UI Environment
@@ -22,6 +22,24 @@ python -m pip install -r requirements-ui.txt
 ```
 
 If ROS launches the dashboard with system Python, the dashboard script will automatically re-exec through `.venv/bin/python` when it can find the workspace venv. You can also set `DELTA_ROBOT_UI_PYTHON=/path/to/python` to point at a different interpreter.
+
+## Frontend UI Environment
+
+The React dashboard lives under `src/delta_robot_ui/frontend` and is served by the FastAPI dashboard when a production build exists.
+
+```bash
+cd ~/ros2_ws/colcon_ws/src/delta_robot_ui/frontend
+npm install
+npm run typecheck
+npm run build
+```
+
+For frontend-only iteration, keep the ROS dashboard running on port 8080 and start Vite in another shell:
+
+```bash
+cd ~/ros2_ws/colcon_ws/src/delta_robot_ui/frontend
+npm run dev
+```
 
 ## Build
 
@@ -60,7 +78,7 @@ Full simulation plus dashboard:
 ros2 launch delta_robot_ui dashboard_sim.launch.py
 ```
 
-Open the dashboard at <http://127.0.0.1:8080>. The first version is simulation-focused and commands motion through the existing `/ikin`, `/trajectory_plan`, and `/joint_states` ROS interfaces.
+Open the dashboard at <http://127.0.0.1:8080>. The dashboard commands motion through the existing `/ikin`, `/trajectory_plan`, and `/joint_states` ROS interfaces. The in-browser robot view is a live kinematic visualization driven by ROS joint state; RViz remains the full ROS visualization path.
 
 Example IK service call:
 

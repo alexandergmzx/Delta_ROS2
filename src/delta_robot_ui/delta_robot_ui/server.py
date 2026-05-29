@@ -4,6 +4,7 @@ import asyncio
 from pathlib import Path
 from typing import Any
 
+from ament_index_python.packages import PackageNotFoundError, get_package_share_directory
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -13,7 +14,11 @@ from .ros_bridge import BridgeError, DeltaRobotRosBridge
 from .sequence_runner import SequenceRunner
 
 
-STATIC_DIR = Path(__file__).with_name("static")
+PACKAGE_NAME = "delta_robot_ui"
+PACKAGE_DIR = Path(__file__).resolve().parent
+STATIC_DIR = PACKAGE_DIR / "static"
+SOURCE_FRONTEND_DIST_DIR = PACKAGE_DIR.parent / "frontend" / "dist"
+WEBSOCKET_INTERVAL_SEC = 0.1
 
 
 def create_app(
@@ -22,11 +27,16 @@ def create_app(
     presets: list[dict[str, Any]],
 ) -> FastAPI:
     app = FastAPI(title="Delta Robot Dashboard")
-    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+    frontend_dist = _frontend_dist_dir()
+
+    if STATIC_DIR.is_dir():
+        app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+    if frontend_dist is not None and (frontend_dist / "assets").is_dir():
+        app.mount("/assets", StaticFiles(directory=frontend_dist / "assets"), name="assets")
 
     @app.get("/")
     async def index() -> FileResponse:
-        return FileResponse(STATIC_DIR / "index.html")
+        return _index_file(frontend_dist)
 
     @app.get("/api/state")
     async def state() -> dict[str, Any]:
@@ -72,8 +82,13 @@ def create_app(
         await websocket.accept()
         try:
             while True:
-                await websocket.send_json(_snapshot(bridge, sequence_runner, presets))
-                await asyncio.sleep(0.25)
+                await websocket.send_json(
+                    {
+                        "type": "snapshot",
+                        "payload": _snapshot(bridge, sequence_runner, presets, include_presets=False),
+                    }
+                )
+                await asyncio.sleep(WEBSOCKET_INTERVAL_SEC)
         except WebSocketDisconnect:
             return
 
@@ -89,10 +104,37 @@ def _snapshot(
     bridge: DeltaRobotRosBridge,
     sequence_runner: SequenceRunner,
     presets: list[dict[str, Any]],
+    *,
+    include_presets: bool = True,
 ) -> dict[str, Any]:
-    return {
-        "state": bridge.state_snapshot(),
-        "health": bridge.health_snapshot(),
+    state = bridge.state_snapshot()
+    snapshot = {
+        "state": state,
+        "health": bridge.health_snapshot(state),
         "sequence": sequence_runner.status_snapshot(),
-        "presets": presets,
     }
+    if include_presets:
+        snapshot["presets"] = presets
+    return snapshot
+
+
+def _index_file(frontend_dist: Path | None) -> FileResponse:
+    if frontend_dist is not None:
+        return FileResponse(frontend_dist / "index.html")
+    return FileResponse(STATIC_DIR / "index.html")
+
+
+def _frontend_dist_dir() -> Path | None:
+    for candidate in _frontend_dist_candidates():
+        if (candidate / "index.html").is_file():
+            return candidate
+    return None
+
+
+def _frontend_dist_candidates() -> list[Path]:
+    candidates = [SOURCE_FRONTEND_DIST_DIR, PACKAGE_DIR / "frontend" / "dist"]
+    try:
+        candidates.append(Path(get_package_share_directory(PACKAGE_NAME)) / "frontend" / "dist")
+    except PackageNotFoundError:
+        pass
+    return candidates
