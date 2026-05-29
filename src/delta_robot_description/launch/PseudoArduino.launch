@@ -1,0 +1,39 @@
+<launch>
+  <!-- Arguments -->
+  <arg name="baudrate" default="115200"/>
+  <arg name="serial_port" default="$(env HOME)/socatpty1"/>
+
+  <!-- Pseudo Arduino node -->
+  <node pkg="delta_robot_serial" exec="pseudo_arduino" name="pseudo_arduino">
+    <param name="baudrate" value="$(var baudrate)"/>
+    <param name="serial_port" value="$(var serial_port)"/>
+  </node>
+
+  <!-- Joint Publisher node -->
+  <node pkg="delta_robot_serial" exec="delta_joint_pub" name="delta_joint_pub">
+    <param name="baudrate" value="$(var baudrate)"/>
+    <param name="serial_port" value="$(var serial_port)"/>
+  </node>
+
+  <!-- Robot State Publisher with Xacro -->
+  <node pkg="robot_state_publisher" exec="robot_state_publisher" name="robot_state_publisher">
+    <param name="robot_description" value="$(command 'xacro $(find-pkg-share delta_robot_description)/urdf/delta_robot.urdf')"/>
+  </node>
+
+  <!-- RViz -->
+  <node pkg="rviz2" exec="rviz2" name="rviz2" args="-d $(find-pkg-share delta_robot_description)/config/delta_robot.rviz"/>
+
+  <!-- Inverse Kinematics Service -->
+  <node pkg="delta_robot_serial" exec="ikin_server" name="ikin_server">
+    <param name="baudrate" value="$(var baudrate)"/>
+    <param name="serial_port" value="$(var serial_port)"/>
+  </node>
+
+  <!-- Trajectory Plan Action Server -->
+  <node pkg="delta_robot_serial" exec="trajPlan_action_server" name="trajectory_plan_server">
+    <!-- no extra params needed; it will listen on /trajectory_plan -->
+  </node>
+
+  <!-- RQT GUI for service calling -->
+  <node pkg="rqt_gui" exec="rqt_gui" name="rqt_gui"/>
+</launch>

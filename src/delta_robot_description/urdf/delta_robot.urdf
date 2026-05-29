@@ -1,0 +1,552 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! -->
+<robot name="delta_robot">
+  <link name="base_footprint"/>
+
+  <joint name="base" type="fixed">
+    <origin xyz="0 0 1" rpy="0 0 0" />
+    <parent link="base_footprint" />
+    <child link="base_link" />
+    <axis xyz="0 0 0" />
+  </joint>
+
+  <link name="base_link">
+    <inertial>
+      <origin xyz="-5.1924E-05 -8.9934E-05 -0.0009175" rpy="0 0 0" />
+      <mass value="0.049302" />
+      <inertia ixx="4.072E-05" ixy="1.0945E-07" ixz="-1.03E-08" iyy="4.0846E-05" iyz="-1.7839E-08" izz="8.0293E-05" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://delta_robot_description/meshes/base_link.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://delta_robot_description/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="proximal_base1" type="revolute">
+    <origin xyz="0.028 0 0" rpy="0 0 0" />
+    <parent link="base_link" />
+    <child link="proximal_link1" />
+    <axis xyz="0 1 0" />
+    <limit lower="0" upper="1.5708" effort="0" velocity="0" />
+  </joint>
+
+  <link name="proximal_link1">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.0034691" />
+      <inertia ixx="1.4895E-07" ixy="-1.071E-08" ixz="8.8878E-23" iyy="1.0031E-06" iyz="5.982E-24" izz="1.1223E-06" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://delta_robot_description/meshes/proximal_link1.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://delta_robot_description/meshes/proximal_link1.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="distal_proximal_1_y" type="revolute">
+    <origin xyz="0.05 -0.0125 0" rpy="0 0 0" />
+    <parent link="proximal_link1" />
+    <child link="shoulder_dp1" />
+    <axis xyz="0 1 0" />
+    <limit lower="-3.14159" upper="3.14159" effort="0" velocity="0" />
+  </joint>
+
+  <link name="shoulder_dp1">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.0001" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+    </inertial>
+  </link>
+
+  <joint name="distal_proximal_1_x" type="revolute">
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <parent link="shoulder_dp1" />
+    <child link="distal_link1" />
+    <axis xyz="0 0 -1" />
+    <limit lower="-3.14159" upper="3.14159" effort="0" velocity="0" />
+  </joint>
+
+
+  <!--joint name="distal_proximal_1" type="revolute">
+    <origin xyz="0.05 -0.0125 0" rpy="0 0 0" />
+    <parent link="proximal_link1" />
+    <child link="distal_link1" />
+    <axis xyz="0 1 0" />
+    <limit lower="0" upper="1.5708" effort="0" velocity="0" />
+  </joint-->
+
+  <link name="distal_link1">
+    <inertial>
+      <origin xyz="0 -0 0" rpy="0 0 0" />
+      <mass value="0.001998" />
+      <inertia ixx="2.3346E-08" ixy="2.0322E-21" ixz="2.0321E-21" iyy="6.0541E-07" iyz="-1.3028E-24" izz="6.0541E-07" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://delta_robot_description/meshes/distal_link1.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://delta_robot_description/meshes/distal_link1.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+ 
+
+  <!--joint name="platform_distal" type="revolute">
+    <origin xyz="0.093 0 0" rpy="0 0 0" />
+    <parent link="distal_link1" />
+    <child link="platform_link" />
+    <axis xyz="0 1 0" />
+    <limit lower="0" upper="1.5708" effort="0" velocity="0" />
+  </joint-->
+  <joint name="platform_base_z" type="prismatic">
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <parent link="base_link" />
+    <child link="connector_pb1" />
+    <axis xyz="0 0 1" />
+    <limit lower="-0.2" upper="0.0" effort="0" velocity="0" />
+  </joint>
+
+  <link name="connector_pb1">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.0001" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+    </inertial>
+  </link>
+
+  <joint name="platform_base_x" type="prismatic">
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <parent link="connector_pb1" />
+    <child link="connector_pb2" />
+    <axis xyz="1 0 0" />
+    <limit lower="-0.2" upper="0.2" effort="0" velocity="0" />
+  </joint>
+
+  <link name="connector_pb2">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.0001" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+    </inertial>
+  </link>
+
+  <joint name="platform_base_y" type="prismatic">
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <parent link="connector_pb2" />
+    <child link="platform_link" />
+    <axis xyz="0 1 0" />
+    <limit lower="-0.2" upper="0.2" effort="0" velocity="0" />
+  </joint>
+
+
+
+
+
+  <link name="platform_link">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.0065362" />
+      <inertia ixx="1.1161E-06" ixy="4.382E-22" ixz="8.9273E-24" iyy="1.1161E-06" iyz="7.1644E-23" izz="2.1753E-06" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://delta_robot_description/meshes/platform_link.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.79216 0.81961 0.93333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://delta_robot_description/meshes/platform_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="distal_proximal_2_y" type="revolute">
+    <origin xyz="0.05 0.0125 0" rpy="0 0 0" />
+    <parent link="proximal_link1" />
+    <child link="shoulder_dp2" />
+    <axis xyz="0 1 0" />
+    <limit lower="-3.14159" upper="3.14159" effort="0" velocity="0" />
+    <mimic joint="distal_proximal_1_y" multiplier="1" offset="0" />
+  </joint>
+
+  <link name="shoulder_dp2">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.0001" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+    </inertial>
+  </link>
+
+  <joint name="distal_proximal_2_x" type="revolute">
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <parent link="shoulder_dp2" />
+    <child link="distal_link2" />
+    <axis xyz="0 0 -1" />
+    <limit lower="-3.14159" upper="3.14159" effort="0" velocity="0" />
+    <mimic joint="distal_proximal_1_x" multiplier="1" offset="0" />
+  </joint>
+
+  <!--joint name="distal_proximal_2" type="revolute">
+    <origin xyz="0.05 0.0125 0" rpy="0 0 0" />
+    <parent link="proximal_link1" />
+    <child link="distal_link2" />
+    <axis xyz="0 1 0" />
+    <limit lower="0" upper="1.5708" effort="0" velocity="0" />
+    <mimic joint="distal_proximal_1" multiplier="1" offset="0" />
+  </joint-->
+
+
+  <link name="distal_link2">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.001998" />
+      <inertia ixx="2.3346E-08" ixy="2.0315E-21" ixz="2.0321E-21" iyy="6.0541E-07" iyz="-1.3028E-24" izz="6.0541E-07" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://delta_robot_description/meshes/distal_link2.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://delta_robot_description/meshes/distal_link2.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="proximal_base2" type="revolute">
+    <origin xyz="-0.014 0.024248711 0" rpy="0 0 2.094395102" />
+    <parent link="base_link" />
+    <child link="proximal_link2" />
+    <axis xyz="0 1 0" />
+    <limit lower="0" upper="1.5708" effort="0" velocity="0" />
+  </joint>
+  
+  <link name="proximal_link2">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.0034691" />
+      <inertia ixx="1.4895E-07" ixy="-1.071E-08" ixz="-3.9606E-23" iyy="1.0031E-06" iyz="-8.1197E-23" izz="1.1223E-06" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://delta_robot_description/meshes/proximal_link1.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://delta_robot_description/meshes/proximal_link1.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="distal_proximal_3_y" type="revolute">
+    <origin xyz="0.05 -0.0125 0" rpy="0 0 0" />
+    <parent link="proximal_link2" />
+    <child link="shoulder_dp3" />
+    <axis xyz="0 1 0" />
+    <limit lower="-3.14159" upper="3.14159" effort="0" velocity="0" />
+  </joint>
+
+  <link name="shoulder_dp3">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.0001" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+    </inertial>
+  </link>
+
+  <joint name="distal_proximal_3_x" type="revolute">
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <parent link="shoulder_dp3" />
+    <child link="distal_link3" />
+    <axis xyz="0 0 -1" />
+    <limit lower="-3.14159" upper="3.14159" effort="0" velocity="0" />
+  </joint>
+
+
+  <!--joint name="distal_proximal3" type="revolute">
+    <origin xyz="0.0395 -0.0125 0" rpy="0 0 0" />
+    <parent link="proximal_link2" />
+    <child link="distal_link3" />
+    <axis xyz="0 1 0" />
+    <limit lower="0" upper="1.5708" effort="0" velocity="0" />
+  </joint-->
+  
+  <link name="distal_link3">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.001998" />
+      <inertia ixx="2.3346E-08" ixy="2.2723E-21" ixz="1.976E-21" iyy="6.0541E-07" iyz="-1.1526E-24" izz="6.0541E-07" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://delta_robot_description/meshes/distal_link3.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://delta_robot_description/meshes/distal_link3.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+
+  <joint name="distal_proximal_4_y" type="revolute">
+    <origin xyz="0.05 0.0125 0" rpy="0 0 0" />
+    <parent link="proximal_link2" />
+    <child link="shoulder_dp4" />
+    <axis xyz="0 1 0" />
+    <limit lower="-3.14159" upper="3.14159" effort="0" velocity="0" />
+    <mimic joint="distal_proximal_3_y" multiplier="1" offset="0" />
+  </joint>
+
+  <link name="shoulder_dp4">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.0001" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+    </inertial>
+  </link>
+
+  <joint name="distal_proximal_4_x" type="revolute">
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <parent link="shoulder_dp4" />
+    <child link="distal_link4" />
+    <axis xyz="0 0 -1" />
+    <limit lower="-3.14159" upper="3.14159" effort="0" velocity="0" />
+    <mimic joint="distal_proximal_3_x" multiplier="1" offset="0" />
+  </joint>
+
+  <!--joint name="distal_proximal4" type="revolute">
+    <origin xyz="0.0395 0.0125 0" rpy="0 0 0" />
+    <parent link="proximal_link2" />
+    <child link="distal_link4" />
+    <axis xyz="0 1 0" />
+    <limit lower="0" upper="1.5708" effort="0" velocity="0" />
+    <mimic joint="distal_proximal3" multiplier="1" offset="0" />
+  </joint-->
+  
+  <link name="distal_link4">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.001998" />
+      <inertia ixx="2.3346E-08" ixy="2.0473E-21" ixz="1.9762E-21" iyy="6.0541E-07" iyz="-8.6332E-25" izz="6.0541E-07" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://delta_robot_description/meshes/distal_link4.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://delta_robot_description/meshes/distal_link4.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="proximal_base3" type="revolute">
+    <origin xyz="-0.014 -0.024248711 0" rpy="0 0 -2.094395102" />
+    <parent link="base_link" />
+    <child link="proximal_link3" />
+    <axis xyz="0 1 0" />
+    <limit lower="0" upper="1.5708" effort="0" velocity="0" />
+  </joint>
+  
+  <link name="proximal_link3">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.0034691" />
+      <inertia ixx="1.4895E-07" ixy="-1.071E-08" ixz="-1.2169E-23" iyy="1.0031E-06" iyz="-1.5593E-23" izz="1.1223E-06" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://delta_robot_description/meshes/proximal_link1.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://delta_robot_description/meshes/proximal_link1.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="distal_proximal_5_y" type="revolute">
+    <origin xyz="0.05 -0.0125 0" rpy="0 0 0" />
+    <parent link="proximal_link3" />
+    <child link="shoulder_dp5" />
+    <axis xyz="0 1 0" />
+    <limit lower="-3.14159" upper="3.14159" effort="0" velocity="0" />
+  </joint>
+
+  <link name="shoulder_dp5">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.0001" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+    </inertial>
+  </link>
+
+  <joint name="distal_proximal_5_x" type="revolute">
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <parent link="shoulder_dp5" />
+    <child link="distal_link5" />
+    <axis xyz="0 0 -1" />
+    <limit lower="-3.14159" upper="3.14159" effort="0" velocity="0" />
+  </joint>
+
+
+
+
+  <!--joint name="distal_proximal5" type="revolute">
+    <origin xyz="0.071887 -0.0125 0" rpy="0 0 0" />
+    <parent link="proximal_link3" />
+    <child link="distal_link5" />
+    <axis xyz="0 1 0" />
+    <limit lower="0" upper="1.5708" effort="0" velocity="0" />
+  </joint-->
+  
+  <link name="distal_link5">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.001998" />
+      <inertia ixx="2.3346E-08" ixy="2.0175E-21" ixz="1.9845E-21" iyy="6.0541E-07" iyz="-7.0649E-25" izz="6.0541E-07" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://delta_robot_description/meshes/distal_link5.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://delta_robot_description/meshes/distal_link5.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+
+  <joint name="distal_proximal_6_y" type="revolute">
+    <origin xyz="0.05 0.0125 0" rpy="0 0 0" />
+    <parent link="proximal_link3" />
+    <child link="shoulder_dp6" />
+    <axis xyz="0 1 0" />
+    <limit lower="-3.14159" upper="3.14159" effort="0" velocity="0" />
+    <mimic joint="distal_proximal_5_y" multiplier="1" offset="0" />
+  </joint>
+
+  <link name="shoulder_dp6">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.0001" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+    </inertial>
+  </link>
+
+  <joint name="distal_proximal_6_x" type="revolute">
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <parent link="shoulder_dp6" />
+    <child link="distal_link6" />
+    <axis xyz="0 0 -1" />
+    <limit lower="-3.14159" upper="3.14159" effort="0" velocity="0" />
+    <mimic joint="distal_proximal_5_x" multiplier="1" offset="0" />
+  </joint>
+
+  <!--joint name="distal_proximal6" type="revolute">
+    <origin xyz="0.071887 0.0125 0" rpy="0 0 0" />
+    <parent link="proximal_link3" />
+    <child link="distal_link6" />
+    <axis xyz="0 1 0" />
+    <limit lower="0" upper="1.5708" effort="0" velocity="0" />
+    <mimic joint="distal_proximal5" multiplier="1" offset="0" />
+  </joint-->
+  
+  <link name="distal_link6">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.001998" />
+      <inertia ixx="2.3346E-08" ixy="2.0787E-21" ixz="1.9845E-21" iyy="6.0541E-07" iyz="-1.1164E-24" izz="6.0541E-07" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://delta_robot_description/meshes/distal_link6.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://delta_robot_description/meshes/distal_link6.STL" />
+      </geometry>
+    </collision>
+  </link>
+  
+</robot>
