@@ -7,6 +7,7 @@ install_*/
 log_*/
 
 # Python/cache artifacts
+.venv/
 __pycache__/
 *.py[cod]
 .pytest_cache/

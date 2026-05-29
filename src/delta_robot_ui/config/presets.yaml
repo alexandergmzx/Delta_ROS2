@@ -1,0 +1,88 @@
+presets:
+  - name: Center Hover
+    description: Stable center pose for sanity checks.
+    waypoints:
+      - name: Center hover
+        x: 0.0
+        y: 0.0
+        z: -100.0
+        dwell_seconds: 0.5
+  - name: Vertical Cycle
+    description: Gentle vertical movement through the reachable center column.
+    waypoints:
+      - name: Low hover
+        x: 0.0
+        y: 0.0
+        z: -115.0
+        dwell_seconds: 0.3
+      - name: Mid hover
+        x: 0.0
+        y: 0.0
+        z: -100.0
+        dwell_seconds: 0.3
+      - name: High hover
+        x: 0.0
+        y: 0.0
+        z: -85.0
+        dwell_seconds: 0.3
+      - name: Mid hover return
+        x: 0.0
+        y: 0.0
+        z: -100.0
+        dwell_seconds: 0.3
+  - name: Small Triangle
+    description: Compact XY path at constant height.
+    waypoints:
+      - name: Front point
+        x: 0.0
+        y: 18.0
+        z: -105.0
+        dwell_seconds: 0.2
+      - name: Right point
+        x: 16.0
+        y: -9.0
+        z: -105.0
+        dwell_seconds: 0.2
+      - name: Left point
+        x: -16.0
+        y: -9.0
+        z: -105.0
+        dwell_seconds: 0.2
+      - name: Center return
+        x: 0.0
+        y: 0.0
+        z: -105.0
+        dwell_seconds: 0.2
+  - name: Pick Place Sketch
+    description: Demo routine with approach, lower, transfer, and release poses.
+    waypoints:
+      - name: Pick approach
+        x: -18.0
+        y: 0.0
+        z: -92.0
+        dwell_seconds: 0.2
+      - name: Pick low
+        x: -18.0
+        y: 0.0
+        z: -112.0
+        dwell_seconds: 0.4
+      - name: Pick lift
+        x: -18.0
+        y: 0.0
+        z: -92.0
+        dwell_seconds: 0.2
+      - name: Place approach
+        x: 18.0
+        y: 0.0
+        z: -92.0
+        dwell_seconds: 0.2
+      - name: Place low
+        x: 18.0
+        y: 0.0
+        z: -112.0
+        dwell_seconds: 0.4
+      - name: Place lift
+        x: 18.0
+        y: 0.0
+        z: -92.0
+        dwell_seconds: 0.2
