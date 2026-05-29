@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Delta Robot Dashboard</title>
+    <link rel="stylesheet" href="/static/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <h1>Delta Robot Dashboard</h1>
+        <p>Simulation control</p>
+      </div>
+      <div class="status-strip" aria-label="Robot status">
+        <span id="wsStatus" class="pill warn">Connecting</span>
+        <span id="jointStatus" class="pill">Joint states</span>
+        <span id="ikStatus" class="pill">IK</span>
+        <span id="actionStatus" class="pill">Trajectory</span>
+      </div>
+    </header>
+
+    <main class="dashboard">
+      <section class="panel live-panel" aria-labelledby="liveHeading">
+        <div class="panel-heading">
+          <h2 id="liveHeading">Live State</h2>
+          <span id="stateAge" class="muted">No data</span>
+        </div>
+        <div class="metric-grid">
+          <div class="metric"><span>X</span><strong id="stateX">--</strong></div>
+          <div class="metric"><span>Y</span><strong id="stateY">--</strong></div>
+          <div class="metric"><span>Z</span><strong id="stateZ">--</strong></div>
+        </div>
+        <div class="angle-row">
+          <div><span>M1</span><strong id="angleA">--</strong></div>
+          <div><span>M2</span><strong id="angleB">--</strong></div>
+          <div><span>M3</span><strong id="angleC">--</strong></div>
+        </div>
+      </section>
+
+      <section class="panel target-panel" aria-labelledby="targetHeading">
+        <div class="panel-heading">
+          <h2 id="targetHeading">Target</h2>
+          <span id="targetResult" class="muted">Unchecked</span>
+        </div>
+        <div class="target-grid">
+          <label>X mm<input id="targetX" type="number" step="1" value="0"></label>
+          <label>Y mm<input id="targetY" type="number" step="1" value="0"></label>
+          <label>Z mm<input id="targetZ" type="number" step="1" value="-100"></label>
+          <label>Step mm<input id="stepSize" type="number" step="1" min="1" value="5"></label>
+        </div>
+        <div class="jog-grid" aria-label="Jog controls">
+          <button data-jog="y:1" title="Jog positive Y">+Y</button>
+          <button data-jog="z:1" title="Jog positive Z">+Z</button>
+          <button data-jog="x:-1" title="Jog negative X">-X</button>
+          <button data-jog="x:1" title="Jog positive X">+X</button>
+          <button data-jog="y:-1" title="Jog negative Y">-Y</button>
+          <button data-jog="z:-1" title="Jog negative Z">-Z</button>
+        </div>
+        <div class="button-row">
+          <button id="checkTarget" class="secondary">Check</button>
+          <button id="moveTarget" class="primary" disabled>Move</button>
+          <button id="addTarget">Add</button>
+          <button id="addCurrent">Current</button>
+        </div>
+      </section>
+
+      <section class="panel sequence-panel" aria-labelledby="sequenceHeading">
+        <div class="panel-heading">
+          <h2 id="sequenceHeading">Waypoints</h2>
+          <span id="sequenceStatus" class="muted">Ready</span>
+        </div>
+        <div class="toolbar">
+          <select id="presetSelect" aria-label="Preset"></select>
+          <button id="loadPreset">Load</button>
+          <button id="runSequence" class="primary">Run</button>
+          <button id="stopSequence" class="danger">Stop</button>
+          <button id="exportCsv">Export</button>
+          <label class="file-button">Import<input id="importCsv" type="file" accept=".csv,text/csv"></label>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th><th>X</th><th>Y</th><th>Z</th><th>Dwell</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="waypointBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel activity-panel" aria-labelledby="activityHeading">
+        <div class="panel-heading">
+          <h2 id="activityHeading">Activity</h2>
+          <span id="feedbackState" class="muted">Idle</span>
+        </div>
+        <ol id="activityLog" class="activity-log"></ol>
+      </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>

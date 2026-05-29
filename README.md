@@ -6,12 +6,29 @@ ROS2 Humble workspace for a parallel-kinematic Delta robot simulation using RViz
 
 - `delta_robot_description`: URDF, meshes, RViz configuration, and launch files.
 - `delta_robot_serial`: inverse kinematics service, joint-state publisher, pseudo-Arduino emulator, and trajectory action server.
+- `delta_robot_ui`: FastAPI browser dashboard for simulation control, jogging, waypoint sequences, CSV paths, and demo presets.
 - `serial`: vendored C++ serial library used by the pseudo/hardware serial path.
+
+## Python UI Environment
+
+The dashboard uses a workspace-local virtual environment. The `--system-site-packages` flag keeps ROS2 Python packages such as `rclpy` visible inside the venv.
+
+```bash
+cd ~/ros2_ws/colcon_ws
+python3 -m venv --system-site-packages .venv
+. .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements-ui.txt
+```
+
+If ROS launches the dashboard with system Python, the dashboard script will automatically re-exec through `.venv/bin/python` when it can find the workspace venv. You can also set `DELTA_ROBOT_UI_PYTHON=/path/to/python` to point at a different interpreter.
 
 ## Build
 
 ```bash
 cd ~/ros2_ws/colcon_ws
+source /opt/ros/humble/setup.bash
+. .venv/bin/activate
 rosdep install --from-paths src --ignore-src -r -y
 colcon build --symlink-install
 source install/setup.bash
@@ -31,6 +48,20 @@ Pseudo-Arduino simulation path:
 ros2 launch delta_robot_description PseudoArduino.launch
 ```
 
+Dashboard only, for an already-running simulation stack:
+
+```bash
+ros2 launch delta_robot_ui dashboard.launch.py
+```
+
+Full simulation plus dashboard:
+
+```bash
+ros2 launch delta_robot_ui dashboard_sim.launch.py
+```
+
+Open the dashboard at <http://127.0.0.1:8080>. The first version is simulation-focused and commands motion through the existing `/ikin`, `/trajectory_plan`, and `/joint_states` ROS interfaces.
+
 Example IK service call:
 
 ```bash
@@ -41,4 +72,13 @@ Example trajectory action goal:
 
 ```bash
 ros2 action send_goal /trajectory_plan delta_robot_serial/action/PosTraj '{x: 0.0, y: 0.0, z: -100.0}' --feedback
+```
+
+## Dashboard CSV Format
+
+Waypoint CSV files use this header:
+
+```csv
+name,x,y,z,dwell_seconds
+Center hover,0,0,-100,0.5
 ```

@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+from importlib.util import find_spec
+import os
+from pathlib import Path
+import sys
+
+
+def _venv_python() -> Path | None:
+    override = os.environ.get("DELTA_ROBOT_UI_PYTHON")
+    if override:
+        return Path(override).expanduser()
+
+    candidates = [Path.cwd(), *Path(__file__).resolve().parents]
+    for base_path in candidates:
+        python_path = base_path / ".venv" / "bin" / "python"
+        if python_path.exists():
+            return python_path
+    return None
+
+
+def _ensure_dashboard_python() -> None:
+    if find_spec("fastapi") and find_spec("uvicorn"):
+        return
+    python_path = _venv_python()
+    if python_path is None:
+        sys.stderr.write(
+            "delta_robot_dashboard needs FastAPI/Uvicorn. Activate the workspace .venv "
+            "or set DELTA_ROBOT_UI_PYTHON to its Python executable.\n"
+        )
+        raise SystemExit(1)
+    venv_root = python_path.parent.parent.resolve()
+    if Path(sys.prefix).resolve() != venv_root:
+        os.execv(str(python_path), [str(python_path), str(Path(__file__).resolve()), *sys.argv[1:]])
+
+
+_ensure_dashboard_python()
+
+from delta_robot_ui.dashboard_node import main
+
+
+if __name__ == "__main__":
+    main()
