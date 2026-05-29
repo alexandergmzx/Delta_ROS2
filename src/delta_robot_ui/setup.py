@@ -6,6 +6,19 @@ from setuptools import find_packages, setup
 
 package_name = "delta_robot_ui"
 
+
+def frontend_dist_data_files():
+    data_files = []
+    for root, _, files in os.walk("frontend/dist"):
+        if files:
+            data_files.append(
+                (
+                    os.path.join("share", package_name, root),
+                    [os.path.join(root, file_name) for file_name in files],
+                )
+            )
+    return data_files
+
 setup(
     name=package_name,
     version="0.1.0",
@@ -15,7 +28,7 @@ setup(
         ("share/" + package_name, ["package.xml"]),
         (os.path.join("share", package_name, "config"), glob("config/*.yaml")),
         (os.path.join("share", package_name, "launch"), glob("launch/*.launch.py")),
-    ],
+    ] + frontend_dist_data_files(),
     package_data={package_name: ["static/*.html", "static/*.css", "static/*.js"]},
     include_package_data=True,
     install_requires=["setuptools"],

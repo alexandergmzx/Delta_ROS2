@@ -12,6 +12,10 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 
+# Frontend artifacts
+src/delta_robot_ui/frontend/node_modules/
+src/delta_robot_ui/frontend/dist/
+
 # ROS/runtime artifacts
 .ros/
 *.bag

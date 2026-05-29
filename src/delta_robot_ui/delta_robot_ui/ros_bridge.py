@@ -94,8 +94,8 @@ class DeltaRobotRosBridge(Node):
             "joint_names": list(msg.name),
         }
 
-    def health_snapshot(self) -> dict[str, Any]:
-        state = self.state_snapshot()
+    def health_snapshot(self, state: dict[str, Any] | None = None) -> dict[str, Any]:
+        state = state or self.state_snapshot()
         return {
             "joint_states": state["connected"],
             "ikin_service": self._ikin_client.service_is_ready(),
