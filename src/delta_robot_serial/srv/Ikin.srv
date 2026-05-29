@@ -1,0 +1,9 @@
+# Request: end-effector position
+float64 x
+float64 y
+float64 z
+---
+# Response: joint angles in degrees
+float64 phi_11
+float64 phi_12
+float64 phi_13
