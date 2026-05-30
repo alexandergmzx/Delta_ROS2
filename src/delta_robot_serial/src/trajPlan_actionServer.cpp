@@ -26,6 +26,19 @@ public:
     using GoalHandlePosTraj = rclcpp_action::ServerGoalHandle<PosTraj>;
     explicit TrajectoryPlanServer(const rclcpp::NodeOptions &options = rclcpp::NodeOptions()) : Node("trajectory_plan_server", options)
     {
+        trajectory_rate_hz_ = this->declare_parameter<double>("trajectory_rate_hz", 10.0);
+        trajectory_steps_ = this->declare_parameter<int>("trajectory_steps", 10);
+        if (trajectory_rate_hz_ <= 0.0)
+        {
+            RCLCPP_WARN(this->get_logger(), "trajectory_rate_hz must be positive; using 10.0 Hz");
+            trajectory_rate_hz_ = 10.0;
+        }
+        if (trajectory_steps_ < 1)
+        {
+            RCLCPP_WARN(this->get_logger(), "trajectory_steps must be at least 1; using 10 steps");
+            trajectory_steps_ = 10;
+        }
+
         // initialize action server
         this->action_server_ = rclcpp_action::create_server<PosTraj>(
             this,
@@ -37,7 +50,11 @@ public:
         action_feedback_ = std::make_shared<PosTraj::Feedback>();
         action_result_ = std::make_shared<PosTraj::Result>();
 
-        RCLCPP_INFO(this->get_logger(), "trajectory plan server started!");
+        RCLCPP_INFO(
+            this->get_logger(),
+            "trajectory plan server started with %d steps at %.2f Hz",
+            trajectory_steps_,
+            trajectory_rate_hz_);
 
         // initialize ikin client
         ikin_client_ = this->create_client<delta_robot_serial::srv::Ikin>("ikin");
@@ -71,6 +88,8 @@ private:
     double state_y = 0.0;
     double state_z = 0.0;
     bool have_state = false;
+    double trajectory_rate_hz_ = 10.0;
+    int trajectory_steps_ = 10;
 
     bool isMotorAngleCommandable(double angle)
     {
@@ -161,11 +180,11 @@ private:
         }
 
         std::vector<std::vector<double>> results = generate_trajectory(goalPos[0], goalPos[1], goalPos[2]);
-        rclcpp::Rate rate(1); // 1 Hz = 1 second
+        rclcpp::Rate rate(trajectory_rate_hz_);
 
         for (const auto &point : results)
         {
-            RCLCPP_INFO(this->get_logger(), "goal step");
+            RCLCPP_DEBUG(this->get_logger(), "trajectory step");
             if (goal_handle->is_canceling())
             {
                 // run the cancelled method on the goal handle
@@ -215,11 +234,11 @@ private:
     std::vector<std::vector<double>> generate_trajectory(double end_x, double end_y, double end_z)
     {
         std::vector<std::vector<double>> trajectory;
-        double increment_x = (end_x - state_x) / 10.0;
-        double increment_y = (end_y - state_y) / 10.0;
-        double increment_z = (end_z - state_z) / 10.0;
+        double increment_x = (end_x - state_x) / static_cast<double>(trajectory_steps_);
+        double increment_y = (end_y - state_y) / static_cast<double>(trajectory_steps_);
+        double increment_z = (end_z - state_z) / static_cast<double>(trajectory_steps_);
 
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < trajectory_steps_; i++)
         {
             trajectory.push_back({
                 state_x + (i + 1) * increment_x,

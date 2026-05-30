@@ -78,6 +78,12 @@ Full simulation plus dashboard:
 ros2 launch delta_robot_ui dashboard_sim.launch.py
 ```
 
+Preset motion speed can be tuned without rebuilding:
+
+```bash
+ros2 launch delta_robot_ui dashboard_sim.launch.py trajectory_rate_hz:=10.0 trajectory_steps:=10
+```
+
 Open the dashboard at <http://127.0.0.1:8080>. The dashboard commands motion through the existing `/ikin`, `/trajectory_plan`, and `/joint_states` ROS interfaces. The in-browser robot view is a live kinematic visualization driven by ROS joint state; RViz remains the full ROS visualization path.
 
 Example IK service call:

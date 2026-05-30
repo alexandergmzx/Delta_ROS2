@@ -4,7 +4,7 @@
   <name>delta_robot_ui</name>
   <version>0.1.0</version>
   <description>Python web dashboard for the Delta robot simulation.</description>
-  <maintainer email="alexander@example.com">Alexander Gomez</maintainer>
+  <maintainer email="alexandergmzx@gmail.com">Alexander Gomez</maintainer>
   <license>TODO: License declaration</license>
 
   <exec_depend>action_msgs</exec_depend>

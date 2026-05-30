@@ -10,6 +10,8 @@ def generate_launch_description():
     serial_port = LaunchConfiguration("serial_port")
     host = LaunchConfiguration("host")
     port = LaunchConfiguration("port")
+    trajectory_rate_hz = LaunchConfiguration("trajectory_rate_hz")
+    trajectory_steps = LaunchConfiguration("trajectory_steps")
 
     robot_description = Command(
         [
@@ -29,6 +31,8 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument("host", default_value="127.0.0.1"),
             DeclareLaunchArgument("port", default_value="8080"),
+            DeclareLaunchArgument("trajectory_rate_hz", default_value="10.0"),
+            DeclareLaunchArgument("trajectory_steps", default_value="10"),
             Node(
                 package="delta_robot_serial",
                 executable="pseudo_arduino",
@@ -74,6 +78,12 @@ def generate_launch_description():
                 executable="trajPlan_action_server",
                 name="trajectory_plan_server",
                 output="screen",
+                parameters=[
+                    {
+                        "trajectory_rate_hz": trajectory_rate_hz,
+                        "trajectory_steps": trajectory_steps,
+                    }
+                ],
             ),
             Node(
                 package="delta_robot_ui",
