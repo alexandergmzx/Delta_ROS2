@@ -63,6 +63,35 @@ bool sendToSerial(double mot1, double mot2, double mot3) {
     sp.write(data);
     return true;
 }
+
+void handleIkinRequest(
+    const rclcpp::Logger &logger,
+    const shared_ptr<Ikin::Request> req,
+    shared_ptr<Ikin::Response> res,
+    bool command_serial) {
+    RCLCPP_INFO(logger, "%s IK request: x=%.3f, y=%.3f, z=%.3f", command_serial ? "Command" : "Check", req->x, req->y, req->z);
+    double position[3] = {req->x, req->y, req->z};
+    double phi[3];
+
+    inverse_kinematics(position, alpha_1, &phi[0]);
+    inverse_kinematics(position, alpha_2, &phi[1]);
+    inverse_kinematics(position, alpha_3, &phi[2]);
+
+    bool sent = false;
+    if (command_serial) {
+        sent = sendToSerial(phi[0], phi[1], phi[2]);
+    }
+    res->phi_11 = phi[0];
+    res->phi_12 = phi[1];
+    res->phi_13 = phi[2];
+    RCLCPP_INFO(
+        logger,
+        "Responding with phi: %.2f, %.2f, %.2f%s",
+        phi[0],
+        phi[1],
+        phi[2],
+        command_serial ? (sent ? "" : " (not sent)") : " (check only)");
+}
 int main(int argc, char **argv) {
     rclcpp::init(argc, argv);
     auto node = rclcpp::Node::make_shared("ikin_server");
@@ -77,28 +106,19 @@ int main(int argc, char **argv) {
     if (!connectToArduino()) {
         return -1;
     }
-    // Create the inverse kinematics service
-    auto service = node->create_service<Ikin>(
+    auto command_service = node->create_service<Ikin>(
         "ikin",
         [&](const shared_ptr<Ikin::Request> req, shared_ptr<Ikin::Response> res) {
-            RCLCPP_INFO(node->get_logger(), "Received IK request: x=%.3f, y=%.3f, z=%.3f", req->x, req->y, req->z);
-            // Compute inverse kinematics
-            double position[3] = {req->x, req->y, req->z};
-            double phi[3];
-            
-            // Calculate inverse kinematics for each leg with its respective alpha value
-            inverse_kinematics(position, alpha_1, &phi[0]);  // Leg 1
-            inverse_kinematics(position, alpha_2, &phi[1]);  // Leg 2  
-            inverse_kinematics(position, alpha_3, &phi[2]);  // Leg 3
-            
-            bool sent = sendToSerial(phi[0], phi[1], phi[2]);
-            res->phi_11 = phi[0];
-            res->phi_12 = phi[1];
-            res->phi_13 = phi[2];
-            RCLCPP_INFO(node->get_logger(), "Responding with phi: %.2f, %.2f, %.2f%s", phi[0], phi[1], phi[2], sent ? "" : " (not sent)");
+            handleIkinRequest(node->get_logger(), req, res, true);
         }
     );
-    RCLCPP_INFO(node->get_logger(), "Inverse kinematics service 'ikin' ready.");
+    auto check_service = node->create_service<Ikin>(
+        "ikin_check",
+        [&](const shared_ptr<Ikin::Request> req, shared_ptr<Ikin::Response> res) {
+            handleIkinRequest(node->get_logger(), req, res, false);
+        }
+    );
+    RCLCPP_INFO(node->get_logger(), "Inverse kinematics services 'ikin' and 'ikin_check' ready.");
     rclcpp::spin(node);
     rclcpp::shutdown();
     sp.close();
