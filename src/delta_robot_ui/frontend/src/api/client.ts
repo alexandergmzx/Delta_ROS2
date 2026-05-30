@@ -1,4 +1,4 @@
-import type { ApiAccepted, DashboardSnapshot, Preset, SnapshotEvent, Target, TargetCheckResult, Waypoint } from './types';
+import type { ApiAccepted, DashboardSnapshot, Preset, SnapshotEvent, Target, TargetCheckResult, TrajectoryConfig, Waypoint } from './types';
 
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
@@ -30,6 +30,17 @@ export function getSnapshot(): Promise<DashboardSnapshot> {
 export async function getPresets(): Promise<Preset[]> {
   const response = await requestJson<{ presets: Preset[] }>('/api/presets');
   return response.presets;
+}
+
+export function getTrajectoryConfig(): Promise<TrajectoryConfig> {
+  return requestJson<TrajectoryConfig>('/api/trajectory/config');
+}
+
+export function setTrajectoryConfig(trajectoryRateHz: number): Promise<TrajectoryConfig> {
+  return requestJson<TrajectoryConfig>('/api/trajectory/config', {
+    method: 'POST',
+    body: JSON.stringify({ trajectory_rate_hz: trajectoryRateHz }),
+  });
 }
 
 export function checkTarget(target: Target): Promise<TargetCheckResult> {

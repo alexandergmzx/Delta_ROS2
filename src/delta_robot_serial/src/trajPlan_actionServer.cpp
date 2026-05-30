@@ -8,6 +8,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <rclcpp/callback_group.hpp>
+#include <rcl_interfaces/msg/set_parameters_result.hpp>
 // Import the communication message headers and enable DLL nodes
 // TODO Add your code code here
 
@@ -38,6 +39,8 @@ public:
             RCLCPP_WARN(this->get_logger(), "trajectory_steps must be at least 1; using 10 steps");
             trajectory_steps_ = 10;
         }
+        parameter_callback_handle_ = this->add_on_set_parameters_callback(
+            std::bind(&TrajectoryPlanServer::handleParameterUpdate, this, _1));
 
         // initialize action server
         this->action_server_ = rclcpp_action::create_server<PosTraj>(
@@ -90,6 +93,63 @@ private:
     bool have_state = false;
     double trajectory_rate_hz_ = 10.0;
     int trajectory_steps_ = 10;
+    rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_callback_handle_;
+
+    rcl_interfaces::msg::SetParametersResult handleParameterUpdate(const std::vector<rclcpp::Parameter> &parameters)
+    {
+        rcl_interfaces::msg::SetParametersResult result;
+        result.successful = true;
+
+        double next_rate_hz = trajectory_rate_hz_;
+        int next_steps = trajectory_steps_;
+
+        for (const auto &parameter : parameters)
+        {
+            if (parameter.get_name() == "trajectory_rate_hz")
+            {
+                if (parameter.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE)
+                {
+                    next_rate_hz = parameter.as_double();
+                }
+                else if (parameter.get_type() == rclcpp::ParameterType::PARAMETER_INTEGER)
+                {
+                    next_rate_hz = static_cast<double>(parameter.as_int());
+                }
+                else
+                {
+                    result.successful = false;
+                    result.reason = "trajectory_rate_hz must be numeric";
+                    return result;
+                }
+                if (!std::isfinite(next_rate_hz) || next_rate_hz <= 0.0)
+                {
+                    result.successful = false;
+                    result.reason = "trajectory_rate_hz must be positive";
+                    return result;
+                }
+            }
+            else if (parameter.get_name() == "trajectory_steps")
+            {
+                if (parameter.get_type() != rclcpp::ParameterType::PARAMETER_INTEGER)
+                {
+                    result.successful = false;
+                    result.reason = "trajectory_steps must be an integer";
+                    return result;
+                }
+                next_steps = static_cast<int>(parameter.as_int());
+                if (next_steps < 1)
+                {
+                    result.successful = false;
+                    result.reason = "trajectory_steps must be at least 1";
+                    return result;
+                }
+            }
+        }
+
+        trajectory_rate_hz_ = next_rate_hz;
+        trajectory_steps_ = next_steps;
+        return result;
+    }
 
     bool isMotorAngleCommandable(double angle)
     {
@@ -108,6 +168,7 @@ private:
 
     bool waitForCurrentState()
     {
+        have_state = false;
         for (int attempt = 0; rclcpp::ok() && !have_state && attempt < 20; ++attempt)
         {
             executor.spin_once(std::chrono::milliseconds(100));
