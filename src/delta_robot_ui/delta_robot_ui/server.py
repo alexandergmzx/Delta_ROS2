@@ -46,6 +46,23 @@ def create_app(
     async def get_presets() -> dict[str, Any]:
         return {"presets": presets}
 
+    @app.get("/api/trajectory/config")
+    async def trajectory_config() -> dict[str, Any]:
+        try:
+            return await asyncio.to_thread(bridge.trajectory_config)
+        except BridgeError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    @app.post("/api/trajectory/config")
+    async def set_trajectory_config(payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            rate_hz = _finite_float(payload.get("trajectory_rate_hz"), "trajectory_rate_hz")
+            return await asyncio.to_thread(bridge.set_trajectory_rate_hz, rate_hz)
+        except BridgeError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except ValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @app.post("/api/target/check")
     async def check_target(payload: dict[str, Any]) -> dict[str, Any]:
         try:
@@ -98,6 +115,16 @@ def create_app(
 def _target_from_payload(payload: dict[str, Any]) -> Target:
     target_payload = payload.get("target") if isinstance(payload.get("target"), dict) else payload
     return Target.from_mapping(target_payload)
+
+
+def _finite_float(value: Any, field_name: str) -> float:
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValidationError(f"{field_name} must be a number") from exc
+    if not parsed == parsed or parsed in (float("inf"), float("-inf")):
+        raise ValidationError(f"{field_name} must be finite")
+    return parsed
 
 
 def _snapshot(

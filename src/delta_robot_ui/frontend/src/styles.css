@@ -283,6 +283,12 @@ h3 {
   color: #ffffff;
 }
 
+.icon-button.danger-icon {
+  color: #991b1b;
+  border-color: #fecaca;
+  background: #fff1f2;
+}
+
 .button.primary {
   background: #0f766e;
   color: #ffffff;
@@ -296,6 +302,11 @@ h3 {
 .button.danger {
   background: #fee2e2;
   color: #991b1b;
+}
+
+.compact-button {
+  flex: 0 0 auto;
+  min-width: 72px;
 }
 
 .button:hover:not(:disabled),
@@ -360,6 +371,36 @@ button:disabled {
 .sequence-panel {
   flex: 1;
   min-height: 0;
+  overflow: auto;
+}
+
+.speed-control {
+  display: grid;
+  grid-template-columns: 22px minmax(120px, 1fr) 54px 78px;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+  padding: 9px;
+  border: 1px solid #e1e7ef;
+  border-radius: 7px;
+  background: #f8fafc;
+}
+
+.speed-control input[type="range"] {
+  width: 100%;
+  accent-color: #2563eb;
+}
+
+.speed-control strong {
+  text-align: right;
+  font-size: 0.88rem;
+}
+
+.inline-meta {
+  margin-bottom: 10px;
+  color: #667085;
+  font-size: 0.76rem;
+  font-weight: 700;
 }
 
 .phase-chip {
@@ -385,10 +426,15 @@ button:disabled {
   padding-right: 2px;
 }
 
+.preset-list.compact-list {
+  max-height: 180px;
+  margin-bottom: 12px;
+}
+
 .preset-item {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 36px;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
   min-height: 56px;
@@ -416,6 +462,103 @@ button:disabled {
   border-radius: 50%;
   background: #f59e0b;
   transform: translateY(-50%);
+}
+
+.mini-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.sequence-editor {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #e1e7ef;
+  border-radius: 7px;
+  background: #fbfdff;
+}
+
+.sequence-name-input,
+.waypoint-row input {
+  width: 100%;
+  min-height: 32px;
+  padding: 6px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #172033;
+}
+
+.wrap-row {
+  flex-wrap: wrap;
+  margin-top: 0;
+}
+
+.wrap-row .button {
+  flex: 1 1 92px;
+  min-width: 92px;
+}
+
+.hidden-input {
+  display: none;
+}
+
+.waypoint-list {
+  display: grid;
+  gap: 7px;
+  max-height: 270px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.waypoint-row {
+  display: grid;
+  grid-template-columns: minmax(108px, 1.25fr) repeat(4, minmax(54px, 0.7fr)) auto;
+  align-items: center;
+  gap: 6px;
+}
+
+.waypoint-row .icon-button {
+  width: 30px;
+  min-width: 30px;
+  min-height: 30px;
+}
+
+.empty-state {
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed #cbd5e1;
+  border-radius: 7px;
+  color: #667085;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.saved-sequences {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  max-height: 160px;
+  overflow: auto;
+}
+
+.saved-sequence-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid #e1e7ef;
+}
+
+.saved-sequence-item p {
+  margin-top: 3px;
+  color: #667085;
+  font-size: 0.8rem;
+  font-weight: 650;
 }
 
 .progress-block {
@@ -489,5 +632,22 @@ button:disabled {
 
   .readout-grid {
     grid-template-columns: 1fr;
+  }
+
+  .speed-control {
+    grid-template-columns: 22px minmax(110px, 1fr) 50px;
+  }
+
+  .speed-control .compact-button {
+    grid-column: 1 / -1;
+  }
+
+  .waypoint-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .waypoint-row input:first-child,
+  .waypoint-row .mini-actions {
+    grid-column: 1 / -1;
   }
 }

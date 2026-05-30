@@ -16,6 +16,20 @@ export type Preset = {
   waypoints: Waypoint[];
 };
 
+export type SavedSequence = {
+  id: string;
+  name: string;
+  waypoints: Waypoint[];
+  updated_at: string;
+};
+
+export type TrajectoryConfig = {
+  available: boolean;
+  trajectory_rate_hz: number | null;
+  trajectory_steps: number | null;
+  trajectory_node: string;
+};
+
 export type JointStateSnapshot = {
   connected: boolean;
   age_sec: number | null;

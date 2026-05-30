@@ -8,6 +8,8 @@ from typing import Any, Callable
 from action_msgs.msg import GoalStatus
 from delta_robot_serial.action import PosTraj
 from delta_robot_serial.srv import Ikin
+from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
+from rcl_interfaces.srv import GetParameters, SetParameters
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
@@ -27,6 +29,7 @@ class DeltaRobotRosBridge(Node):
         self.declare_parameter("presets_file", "")
         self.declare_parameter("ik_service", "/ikin")
         self.declare_parameter("trajectory_action", "/trajectory_plan")
+        self.declare_parameter("trajectory_node", "/trajectory_plan_server")
         self.declare_parameter("joint_states_topic", "/joint_states")
         self.declare_parameter("state_stale_after", 1.0)
         self.declare_parameter("ros_timeout_sec", 2.0)
@@ -39,6 +42,7 @@ class DeltaRobotRosBridge(Node):
 
         ik_service = self.get_parameter("ik_service").value
         trajectory_action = self.get_parameter("trajectory_action").value
+        trajectory_node = self.get_parameter("trajectory_node").value
         joint_states_topic = self.get_parameter("joint_states_topic").value
 
         self._lock = threading.Lock()
@@ -53,6 +57,15 @@ class DeltaRobotRosBridge(Node):
         )
         self._ikin_client = self.create_client(Ikin, ik_service)
         self._trajectory_client = ActionClient(self, PosTraj, trajectory_action)
+        self._trajectory_node = self._normalize_node_name(str(trajectory_node))
+        self._trajectory_get_parameters_client = self.create_client(
+            GetParameters,
+            f"{self._trajectory_node}/get_parameters",
+        )
+        self._trajectory_set_parameters_client = self.create_client(
+            SetParameters,
+            f"{self._trajectory_node}/set_parameters",
+        )
 
     def _joint_state_callback(self, msg: JointState) -> None:
         with self._lock:
@@ -101,6 +114,44 @@ class DeltaRobotRosBridge(Node):
             "ikin_service": self._ikin_client.service_is_ready(),
             "trajectory_action": self._trajectory_client.server_is_ready(),
         }
+
+    def trajectory_config(self, timeout_sec: float | None = None) -> dict[str, Any]:
+        timeout = timeout_sec or self.ros_timeout_sec
+        if not self._trajectory_get_parameters_client.wait_for_service(timeout_sec=timeout):
+            raise BridgeError(f"{self._trajectory_node} parameter service is unavailable")
+
+        request = GetParameters.Request()
+        request.names = ["trajectory_rate_hz", "trajectory_steps"]
+        response = self._wait_for_future(self._trajectory_get_parameters_client.call_async(request), timeout)
+        values = list(response.values)
+        rate_hz = self._parameter_number(values[0]) if len(values) > 0 else None
+        steps = self._parameter_integer(values[1]) if len(values) > 1 else None
+        return {
+            "available": True,
+            "trajectory_rate_hz": rate_hz,
+            "trajectory_steps": steps,
+            "trajectory_node": self._trajectory_node,
+        }
+
+    def set_trajectory_rate_hz(self, rate_hz: float, timeout_sec: float | None = None) -> dict[str, Any]:
+        timeout = timeout_sec or self.ros_timeout_sec
+        if not math.isfinite(rate_hz) or rate_hz < 1.0 or rate_hz > 60.0:
+            raise BridgeError("trajectory_rate_hz must be between 1 and 60")
+        if not self._trajectory_set_parameters_client.wait_for_service(timeout_sec=timeout):
+            raise BridgeError(f"{self._trajectory_node} parameter service is unavailable")
+
+        request = SetParameters.Request()
+        request.parameters = [
+            Parameter(
+                name="trajectory_rate_hz",
+                value=ParameterValue(type=ParameterType.PARAMETER_DOUBLE, double_value=rate_hz),
+            )
+        ]
+        response = self._wait_for_future(self._trajectory_set_parameters_client.call_async(request), timeout)
+        for result in response.results:
+            if not result.successful:
+                raise BridgeError(result.reason or "Failed to update trajectory_rate_hz")
+        return self.trajectory_config(timeout)
 
     def check_target(self, target: Target, timeout_sec: float | None = None) -> dict[str, Any]:
         timeout = timeout_sec or self.ros_timeout_sec
@@ -181,6 +232,27 @@ class DeltaRobotRosBridge(Node):
         if result is None:
             raise BridgeError("ROS operation returned no result")
         return result
+
+    @staticmethod
+    def _normalize_node_name(node_name: str) -> str:
+        stripped = node_name.strip() or "trajectory_plan_server"
+        return stripped if stripped.startswith("/") else f"/{stripped}"
+
+    @staticmethod
+    def _parameter_number(value: ParameterValue) -> float | None:
+        if value.type == ParameterType.PARAMETER_DOUBLE:
+            return float(value.double_value)
+        if value.type == ParameterType.PARAMETER_INTEGER:
+            return float(value.integer_value)
+        return None
+
+    @staticmethod
+    def _parameter_integer(value: ParameterValue) -> int | None:
+        if value.type == ParameterType.PARAMETER_INTEGER:
+            return int(value.integer_value)
+        if value.type == ParameterType.PARAMETER_DOUBLE:
+            return int(value.double_value)
+        return None
 
     @staticmethod
     def _status_text(status: int) -> str:
