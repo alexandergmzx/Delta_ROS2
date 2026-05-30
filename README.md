@@ -9,6 +9,68 @@ ROS2 Humble workspace for a parallel-kinematic Delta robot simulation using RViz
 - `delta_robot_ui`: FastAPI + React browser dashboard for simulation control, live state, waypoint sequences, and demo presets.
 - `serial`: vendored C++ serial library used by the pseudo/hardware serial path.
 
+## Linux Mint Clone Setup
+
+Use Linux Mint 21.x, which is based on Ubuntu 22.04 Jammy, with ROS 2 Humble. Linux Mint 22.x is based on Ubuntu 24.04 Noble, so ROS 2 Humble apt packages are not the natural target there; use Mint 21.x, Ubuntu 22.04, or a Jammy/Humble container for the least friction.
+
+The repository is source-only. After cloning, regenerate the ignored local outputs: `.venv/`, `src/delta_robot_ui/frontend/node_modules/`, `src/delta_robot_ui/frontend/dist/`, `build/`, `install/`, and `log/`.
+
+Install the base development tools, ROS 2 Humble, and Node.js 20 LTS:
+
+```bash
+sudo apt update
+sudo apt install -y git curl build-essential cmake python3-pip python3-venv python3-colcon-common-extensions python3-rosdep
+
+# Install ROS 2 Humble Desktop from the official ROS 2 Ubuntu 22.04 instructions.
+# Install Node.js >= 18; Node.js 20 LTS is recommended for Vite.
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+
+sudo rosdep init 2>/dev/null || true
+rosdep update
+```
+
+Clone and install workspace dependencies:
+
+```bash
+mkdir -p ~/ros2_ws
+cd ~/ros2_ws
+git clone <repo-url> colcon_ws
+cd colcon_ws
+
+source /opt/ros/humble/setup.bash
+rosdep install --from-paths src --ignore-src -r -y --rosdistro humble --os=ubuntu:jammy
+```
+
+The ROS/package dependencies resolved by `rosdep` include `ament_cmake`, `action_msgs`, `rclcpp`, `rclcpp_action`, `rclcpp_components`, `rclpy`, `rcl_interfaces`, `sensor_msgs`, `std_msgs`, `rosidl_default_generators`, `rosidl_default_runtime`, `launch`, `launch_ros`, `ament_index_python`, `robot_state_publisher`, `joint_state_publisher_gui`, `rviz2`, `rqt_gui`, `xacro`, Eigen, Boost test headers, and `socat`. The `serial` package is vendored in `src/serial` and is built from this repository.
+
+Set up the dashboard backend and frontend:
+
+```bash
+python3 -m venv --system-site-packages .venv
+. .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements-ui.txt
+
+cd src/delta_robot_ui/frontend
+npm ci
+npm run typecheck
+npm run build
+cd ../../..
+```
+
+Build and run:
+
+```bash
+source /opt/ros/humble/setup.bash
+. .venv/bin/activate
+colcon build --symlink-install
+source install/setup.bash
+ros2 launch delta_robot_ui dashboard_sim.launch.py
+```
+
+Open the dashboard at <http://127.0.0.1:8080>.
+
 ## Python UI Environment
 
 The dashboard uses a workspace-local virtual environment. The `--system-site-packages` flag keeps ROS2 Python packages such as `rclpy` visible inside the venv.

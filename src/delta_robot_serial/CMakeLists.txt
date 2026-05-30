@@ -24,6 +24,7 @@ find_package(rosidl_default_generators REQUIRED)
 find_package(Eigen3 REQUIRED)
 # New action dependencies
 find_package(action_msgs REQUIRED)
+find_package(rcl_interfaces REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(rclcpp_components REQUIRED)
 
@@ -88,6 +89,7 @@ ament_target_dependencies(trajPlan_actionServer
   rclcpp
   rclcpp_action
   rclcpp_components
+  rcl_interfaces
   sensor_msgs
 )
 target_link_libraries(trajPlan_actionServer
