@@ -4,6 +4,8 @@
 #include <cstdlib>
 #include <chrono>
 #include <cmath>
+#include <future>
+#include <mutex>
 #include <vector>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
@@ -90,7 +92,8 @@ private:
     double state_x = 0.0;
     double state_y = 0.0;
     double state_z = 0.0;
-    bool have_state = false;
+    uint64_t state_version_ = 0;
+    std::mutex state_mutex_;
     double trajectory_rate_hz_ = 10.0;
     int trajectory_steps_ = 10;
     rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_callback_handle_;
@@ -166,14 +169,34 @@ private:
         return isMotorAngleCommandable(phi[0]) && isMotorAngleCommandable(phi[1]) && isMotorAngleCommandable(phi[2]);
     }
 
-    bool waitForCurrentState()
+    uint64_t stateVersion()
     {
-        have_state = false;
-        for (int attempt = 0; rclcpp::ok() && !have_state && attempt < 20; ++attempt)
+        std::lock_guard<std::mutex> lock(state_mutex_);
+        return state_version_;
+    }
+
+    std::vector<double> stateSnapshot()
+    {
+        std::lock_guard<std::mutex> lock(state_mutex_);
+        return {state_x, state_y, state_z};
+    }
+
+    bool waitForStateAfter(uint64_t previous_version)
+    {
+        for (int attempt = 0; rclcpp::ok() && attempt < 20; ++attempt)
         {
             executor.spin_once(std::chrono::milliseconds(100));
+            if (stateVersion() > previous_version)
+            {
+                return true;
+            }
         }
-        return have_state;
+        return false;
+    }
+
+    bool waitForCurrentState()
+    {
+        return waitForStateAfter(stateVersion());
     }
 
     void abortGoalAtPoint(const std::shared_ptr<GoalHandlePosTraj> goal_handle, const std::vector<double> &point)
@@ -240,7 +263,14 @@ private:
             return;
         }
 
-        std::vector<std::vector<double>> results = generate_trajectory(goalPos[0], goalPos[1], goalPos[2]);
+        std::vector<double> start_position = stateSnapshot();
+        std::vector<std::vector<double>> results = generate_trajectory(
+            start_position[0],
+            start_position[1],
+            start_position[2],
+            goalPos[0],
+            goalPos[1],
+            goalPos[2]);
         rclcpp::Rate rate(trajectory_rate_hz_);
 
         for (const auto &point : results)
@@ -265,14 +295,32 @@ private:
                 return;
             }
 
-            ikin_request->set__x(point[0]);
-            ikin_request->set__y(point[1]);
-            ikin_request->set__z(point[2]);
+            auto request = std::make_shared<delta_robot_serial::srv::Ikin::Request>();
+            request->set__x(point[0]);
+            request->set__y(point[1]);
+            request->set__z(point[2]);
 
-            auto res = ikin_client_->async_send_request(ikin_request);
+            uint64_t state_before_command = stateVersion();
+            auto res = ikin_client_->async_send_request(request);
 
             if (!res.valid())
             {
+                goal_handle->abort(action_result_);
+                goal_handle->publish_feedback(action_feedback_);
+                return;
+            }
+
+            if (res.wait_for(std::chrono::seconds(2)) != std::future_status::ready)
+            {
+                RCLCPP_ERROR(this->get_logger(), "IK service request timed out during trajectory execution");
+                goal_handle->abort(action_result_);
+                goal_handle->publish_feedback(action_feedback_);
+                return;
+            }
+
+            if (!waitForStateAfter(state_before_command))
+            {
+                RCLCPP_ERROR(this->get_logger(), "No joint state update after IK trajectory command");
                 goal_handle->abort(action_result_);
                 goal_handle->publish_feedback(action_feedback_);
                 return;
@@ -292,19 +340,25 @@ private:
         goal_handle->publish_feedback(action_feedback_);
     }
 
-    std::vector<std::vector<double>> generate_trajectory(double end_x, double end_y, double end_z)
+    std::vector<std::vector<double>> generate_trajectory(
+        double start_x,
+        double start_y,
+        double start_z,
+        double end_x,
+        double end_y,
+        double end_z)
     {
         std::vector<std::vector<double>> trajectory;
-        double increment_x = (end_x - state_x) / static_cast<double>(trajectory_steps_);
-        double increment_y = (end_y - state_y) / static_cast<double>(trajectory_steps_);
-        double increment_z = (end_z - state_z) / static_cast<double>(trajectory_steps_);
+        double increment_x = (end_x - start_x) / static_cast<double>(trajectory_steps_);
+        double increment_y = (end_y - start_y) / static_cast<double>(trajectory_steps_);
+        double increment_z = (end_z - start_z) / static_cast<double>(trajectory_steps_);
 
         for (int i = 0; i < trajectory_steps_; i++)
         {
             trajectory.push_back({
-                state_x + (i + 1) * increment_x,
-                state_y + (i + 1) * increment_y,
-                state_z + (i + 1) * increment_z});
+                start_x + (i + 1) * increment_x,
+                start_y + (i + 1) * increment_y,
+                start_z + (i + 1) * increment_z});
         }
         return trajectory;
     }
@@ -317,10 +371,11 @@ private:
             return;
         }
 
+        std::lock_guard<std::mutex> lock(state_mutex_);
         state_x = 1000 * msg.position.at(0); // read x,y,z into state
         state_y = 1000 * msg.position.at(1);
         state_z = 1000 * msg.position.at(2);
-        have_state = true;
+        state_version_++;
     }
 };
 

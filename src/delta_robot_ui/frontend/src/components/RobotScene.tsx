@@ -14,7 +14,7 @@ export function RobotScene() {
   const position = useDashboardStore((state) => state.snapshot?.state.position_mm ?? null);
   const target = useDashboardStore((state) => state.target);
   const sequenceFeedback = useDashboardStore((state) => state.snapshot?.sequence.feedback ?? null);
-  const pose = sequenceFeedback ?? position ?? target;
+  const pose = position ?? target;
 
   return (
     <div className="scene-wrap">
@@ -23,7 +23,7 @@ export function RobotScene() {
         <ambientLight intensity={0.7} />
         <directionalLight position={[3, 6, 4]} intensity={1.1} />
         <gridHelper args={[5, 10, '#d4dce7', '#e8edf3']} position={[0, -3.1, 0]} />
-        <RobotGeometry pose={pose} target={target} hasLivePose={Boolean(position)} />
+        <RobotGeometry pose={pose} target={target} feedback={sequenceFeedback} hasLivePose={Boolean(position)} />
         <OrbitControls makeDefault enableDamping dampingFactor={0.08} maxDistance={8} minDistance={2.2} />
       </Canvas>
       <div className="scene-overlay">
@@ -37,14 +37,16 @@ export function RobotScene() {
 type RobotGeometryProps = {
   pose: Target;
   target: Target;
+  feedback: Target | null;
   hasLivePose: boolean;
 };
 
-function RobotGeometry({ pose, target, hasLivePose }: RobotGeometryProps) {
+function RobotGeometry({ pose, target, feedback, hasLivePose }: RobotGeometryProps) {
   const baseAnchors = useAnchors(BASE_RADIUS, 0);
   const platformAnchors = useAnchors(PLATFORM_RADIUS, 0);
   const platformCenter = toScenePoint(pose);
   const targetCenter = toScenePoint(target);
+  const feedbackCenter = feedback ? toScenePoint(feedback) : null;
   const translatedPlatform = platformAnchors.map(([x, y, z]) => [x + platformCenter[0], y + platformCenter[1], z + platformCenter[2]] as Vector3Tuple);
 
   return (
@@ -68,6 +70,12 @@ function RobotGeometry({ pose, target, hasLivePose }: RobotGeometryProps) {
         <boxGeometry args={[0.14, 0.14, 0.14]} />
         <meshStandardMaterial color="#dc2626" roughness={0.5} />
       </mesh>
+      {feedbackCenter ? (
+        <mesh position={feedbackCenter}>
+          <sphereGeometry args={[0.07, 18, 18]} />
+          <meshStandardMaterial color="#2563eb" roughness={0.5} />
+        </mesh>
+      ) : null}
       <Line points={[[0, 0, 0], platformCenter]} color="#94a3b8" lineWidth={1} dashed dashSize={0.12} gapSize={0.08} />
     </group>
   );

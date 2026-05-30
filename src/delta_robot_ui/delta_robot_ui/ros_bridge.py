@@ -28,6 +28,7 @@ class DeltaRobotRosBridge(Node):
         self.declare_parameter("port", 8080)
         self.declare_parameter("presets_file", "")
         self.declare_parameter("ik_service", "/ikin")
+        self.declare_parameter("ik_check_service", "/ikin_check")
         self.declare_parameter("trajectory_action", "/trajectory_plan")
         self.declare_parameter("trajectory_node", "/trajectory_plan_server")
         self.declare_parameter("joint_states_topic", "/joint_states")
@@ -41,6 +42,7 @@ class DeltaRobotRosBridge(Node):
         self.ros_timeout_sec = float(self.get_parameter("ros_timeout_sec").value)
 
         ik_service = self.get_parameter("ik_service").value
+        ik_check_service = self.get_parameter("ik_check_service").value
         trajectory_action = self.get_parameter("trajectory_action").value
         trajectory_node = self.get_parameter("trajectory_node").value
         joint_states_topic = self.get_parameter("joint_states_topic").value
@@ -56,6 +58,7 @@ class DeltaRobotRosBridge(Node):
             10,
         )
         self._ikin_client = self.create_client(Ikin, ik_service)
+        self._ikin_check_client = self.create_client(Ikin, ik_check_service)
         self._trajectory_client = ActionClient(self, PosTraj, trajectory_action)
         self._trajectory_node = self._normalize_node_name(str(trajectory_node))
         self._trajectory_get_parameters_client = self.create_client(
@@ -111,7 +114,7 @@ class DeltaRobotRosBridge(Node):
         state = state or self.state_snapshot()
         return {
             "joint_states": state["connected"],
-            "ikin_service": self._ikin_client.service_is_ready(),
+            "ikin_service": self._ikin_check_client.service_is_ready(),
             "trajectory_action": self._trajectory_client.server_is_ready(),
         }
 
@@ -155,14 +158,14 @@ class DeltaRobotRosBridge(Node):
 
     def check_target(self, target: Target, timeout_sec: float | None = None) -> dict[str, Any]:
         timeout = timeout_sec or self.ros_timeout_sec
-        if not self._ikin_client.wait_for_service(timeout_sec=timeout):
-            raise BridgeError("/ikin service is unavailable")
+        if not self._ikin_check_client.wait_for_service(timeout_sec=timeout):
+            raise BridgeError("/ikin_check service is unavailable")
 
         request = Ikin.Request()
         request.x = target.x
         request.y = target.y
         request.z = target.z
-        response = self._wait_for_future(self._ikin_client.call_async(request), timeout)
+        response = self._wait_for_future(self._ikin_check_client.call_async(request), timeout)
         angles = [response.phi_11, response.phi_12, response.phi_13]
         reachable = angles_are_commandable(angles)
         return {
