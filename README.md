@@ -2,6 +2,8 @@
 
 ROS 2 Jazzy workspace for a parallel-kinematic Delta robot simulation using RViz and a pseudo-serial Arduino emulator.
 
+Project documentation — the migration plan and the history of how we got here — lives in [`docs/`](docs/README.md).
+
 ## Packages
 
 - `delta_robot_description`: URDF, meshes, RViz configuration, and launch files.
@@ -54,25 +56,27 @@ The ROS/package dependencies resolved by `rosdep` include `ament_cmake`, `action
 
 ## Python UI Environment
 
-The dashboard uses a workspace-local virtual environment. The `--system-site-packages` flag keeps ROS 2 Python packages such as `rclpy` visible inside the venv.
+The dashboard uses a workspace-local virtual environment. The `--system-site-packages` flag keeps ROS 2 Python packages such as `rclpy` visible inside the venv. Create the venv with the explicit system interpreter path so it is not bound to some other Python install (see the troubleshooting note below).
 
 ```bash
 cd ~/ros2_ws/colcon_ws
 source /opt/ros/jazzy/setup.bash
-python3 -m venv --system-site-packages .venv
+/usr/bin/python3.12 -m venv --system-site-packages .venv
 . .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements-ui.txt
+# Build-time deps that colcon/ament/rosidl need from the venv interpreter:
+python -m pip install catkin_pkg "empy==3.3.4" lark
 python - <<'PY'
-import fastapi
-import uvicorn
-import yaml
-import rclpy
-print('Python UI environment OK')
+import sys, fastapi, uvicorn, yaml, rclpy, catkin_pkg, em, lark
+assert sys.base_prefix == '/usr', f'venv base_prefix is {sys.base_prefix}, expected /usr'
+print('Python UI environment OK, empy', em.__version__)
 PY
 ```
 
 If ROS launches the dashboard with system Python, the dashboard script will automatically re-exec through `.venv/bin/python` when it can find the workspace venv. You can also set `DELTA_ROBOT_UI_PYTHON=/path/to/python` to point at a different interpreter.
+
+**Build troubleshooting (venv / Python):** the venv interpreter is what `colcon build` uses for ament's build-time scripts, so it needs `catkin_pkg`, `empy==3.3.4`, and `lark`. Pin `empy` to `3.3.4` — `empy` 4.x breaks the rosidl generators with `em.TransientParseError: not enough data to read`. If `python3 -c "import sys; print(sys.base_prefix)"` prints anything other than `/usr` (e.g. `/usr/local`), the venv is bound to a stale/source-built Python and the `rosidl_generator_py` link step will fail with a non-PIC `libpython3.12.a` relocation error; recreate the venv with `/usr/bin/python3.12 -m venv ...` as shown above.
 
 ## Frontend UI Environment
 
