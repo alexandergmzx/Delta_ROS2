@@ -4,6 +4,21 @@ This note is a handoff for migrating this workspace from ROS 2 Humble on Ubuntu 
 
 When resuming after cloning the repository in Ubuntu 24.04, read this file first.
 
+## Current Migration Status
+
+Status as of 2026-05-31 in the Ubuntu 24.04 WSL2 distro named `Ubuntu`:
+
+- Ubuntu 24.04.4, ROS 2 Jazzy, Node.js 20.20.2, and npm 10.8.2 are present.
+- `README.md` has been updated from Humble/Jammy to Jazzy/Noble instructions.
+- Local ignored VS Code config was added under `.vscode/` for this UNC-opened WSL workspace, with Jazzy/Python 3.12 analysis paths and C++17 IntelliSense.
+- Python UI venv setup passed with `fastapi`, `uvicorn`, `yaml`, and `rclpy` imports when Jazzy is sourced.
+- Frontend `npm ci`, `npm run typecheck`, and `npm run build` passed; Vite reported only its large chunk warning for the 3D scene bundle.
+- `rosdep check --from-paths src --ignore-src --rosdistro jazzy` reports all system dependencies satisfied.
+- `colcon build --symlink-install --cmake-clean-cache` passed for all four packages.
+- `ros2 launch delta_robot_ui dashboard_sim.launch.py` runs in WSL2: `/joint_states`, `/ikin`, `/trajectory_plan`, dashboard HTTP GET, and a dashboard `/api/move` command to `{x: 0, y: 0, z: -100}` all validated.
+- No Jazzy CMake, manifest, or source-code compatibility changes were needed.
+- Remaining unverified layers are WSL2 hardware serial passthrough and the repeat setup on Linux Mint 22.
+
 ## Current Project Snapshot
 
 Current workspace assumption: ROS 2 Humble on Ubuntu 22.04/Jammy.

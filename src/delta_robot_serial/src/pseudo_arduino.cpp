@@ -6,17 +6,42 @@
 #include <rclcpp/rclcpp.hpp>
 #include <serial/serial.h>
 #include <string>
+#include <cmath>
+#include <iomanip>
 
 #include <iostream>
 #include <stdio.h>
+#include <sstream>
+#include <inverse_kinematics.h>
 using namespace std;
-// Mock angles of the virtual delta robot in degrees (initial value at 0°,0°,0°)
+// Mock angles of the virtual delta robot in degrees.
 // Enter your code here
-double target_angle[3] = {0, 0, 0};
+double target_angle[3] = {27.54417527137167, 27.54417527137167, 27.54417527137167};
 string temp = "";
 string buffer;
 serial::Serial sp1;//pseudo serial port on computer
 serial::Serial sp2;//pseudo serial port on arduino
+bool isMotorAngleCommandable(double angle) {
+    return std::isfinite(angle) && angle >= 0.0 && angle <= 90.0;
+}
+
+bool calculateCommandableIk(const double position[3], double angles[3]) {
+    double mutable_position[3] = {position[0], position[1], position[2]};
+    inverse_kinematics(mutable_position, alpha_1, &angles[0]);
+    inverse_kinematics(mutable_position, alpha_2, &angles[1]);
+    inverse_kinematics(mutable_position, alpha_3, &angles[2]);
+
+    return isMotorAngleCommandable(angles[0]) &&
+           isMotorAngleCommandable(angles[1]) &&
+           isMotorAngleCommandable(angles[2]);
+}
+
+void setTargetAngles(const double angles[3]) {
+    target_angle[0] = angles[0];
+    target_angle[1] = angles[1];
+    target_angle[2] = angles[2];
+}
+
 void string2double(string str, double* numbers, int size) {
     int startIndex = 0;
     int endIndex = str.find(',',0);
@@ -38,9 +63,9 @@ class PseudoArduino:public rclcpp::Node
 {
 
 public:
-    PseudoArduino():Node("delta_joint_pub")
+    PseudoArduino():Node("pseudo_arduino")
     {
-        timer = this->create_wall_timer(std::chrono::milliseconds(20), std::bind(&PseudoArduino::timer_callback, this));
+        initializeTargetAngles();
         char *pathvar;
         pathvar = getenv("HOME");
         string home_path=pathvar;
@@ -52,10 +77,48 @@ public:
         sp2.setTimeout(to);//give the timeout to serial
         sp2.setPort(home_path+"/socatpty2");//pseudo serial port on arduino
         sp2.setBaudrate(115200);//Set the baud rate for serial communication
+        timer = this->create_wall_timer(std::chrono::milliseconds(20), std::bind(&PseudoArduino::timer_callback, this));
     }
 private:
     rclcpp::TimerBase::SharedPtr timer;
     rclcpp::Time current_time;
+    void initializeTargetAngles()
+    {
+        this->declare_parameter<double>("initial_x", 0.0);
+        this->declare_parameter<double>("initial_y", 0.0);
+        this->declare_parameter<double>("initial_z", -100.0);
+
+        double initial_position[3] = {
+            this->get_parameter("initial_x").as_double(),
+            this->get_parameter("initial_y").as_double(),
+            this->get_parameter("initial_z").as_double()
+        };
+        double initial_angles[3];
+        if (!calculateCommandableIk(initial_position, initial_angles)) {
+            RCLCPP_WARN(
+                this->get_logger(),
+                "Initial pseudo-Arduino pose %.2f, %.2f, %.2f is not commandable; using fallback motor angles %.2f, %.2f, %.2f",
+                initial_position[0],
+                initial_position[1],
+                initial_position[2],
+                target_angle[0],
+                target_angle[1],
+                target_angle[2]);
+            return;
+        }
+
+        setTargetAngles(initial_angles);
+        RCLCPP_INFO(
+            this->get_logger(),
+            "Initial pseudo-Arduino pose %.2f, %.2f, %.2f maps to motor angles %.2f, %.2f, %.2f",
+            initial_position[0],
+            initial_position[1],
+            initial_position[2],
+            target_angle[0],
+            target_angle[1],
+            target_angle[2]);
+    }
+
     void timer_callback()
     {
         current_time = this->get_clock()->now();
