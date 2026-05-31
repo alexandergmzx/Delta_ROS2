@@ -5,7 +5,7 @@ This file is the handoff for moving the Delta ROS 2 workspace from the validated
 When resuming on the Linux Mint PC, open the cloned repository in VS Code and say:
 
 ```text
-Read upgrade_plan.md and continue the Linux Mint 22 ROS Jazzy handoff.
+Read docs/upgrade_plan.md and continue the Linux Mint 22 ROS Jazzy handoff.
 ```
 
 ## Current Status
@@ -24,10 +24,15 @@ Validated on 2026-05-31 in Ubuntu 24.04.4 WSL2, ROS 2 Jazzy:
 - `/joint_states`, `/ikin`, `/trajectory_plan`, dashboard HTTP GET, and dashboard `/api/move` to `{x: 0, y: 0, z: -100}` were validated.
 - The pseudo-Arduino startup pose was fixed so the simulation starts near `z=-100 mm` instead of publishing the old `0,0,0` motor-angle pose.
 
+Also validated on 2026-05-31 on the native Linux Mint 22 PC, ROS 2 Jazzy, Python 3.12:
+
+- After fixing the venv (see Part 6 "Mint PC venv gotchas"), `colcon build --symlink-install` passed for all four packages.
+- `ros2 launch delta_robot_ui dashboard_sim.launch.py` brought up `pseudo_arduino`, `delta_joint_pub`, `robot_state_publisher`, `ikin_server`, `trajectory_plan_server`, `delta_robot_dashboard`, and `rviz2`.
+- `/joint_states` published, `/ikin` service and `/trajectory_plan` action were available, dashboard HTTP GET returned 200, and `/api/move` to `{x: 0, y: 0, z: -100}` returned `{"accepted": true}`.
+
 Not yet validated:
 
-- Native Linux Mint 22 build and runtime.
-- Native RViz/GPU behavior on the Mint PC.
+- Native RViz/GPU behavior on the Mint PC (RViz launched; visual correctness not confirmed).
 - Real hardware serial on the Mint PC.
 
 ## Repository Packages
@@ -197,6 +202,37 @@ PY
 
 If a Python package fails on Python 3.12, pin the minimum working version in `requirements-ui.txt` only after confirming the failing package.
 
+### Mint PC venv gotchas (resolved 2026-05-31)
+
+The first native Mint build failed; the venv must be created carefully. Two distinct failures were hit and fixed, in order:
+
+1. **`ModuleNotFoundError: No module named 'catkin_pkg'`** during the `colcon build` ament configure step. The venv was missing ROS build-time Python deps. Install them into the venv:
+   ```bash
+   pip install catkin_pkg "empy==3.3.4" lark
+   ```
+   `empy` **must** be pinned to `3.3.4`. The newer `empy` 4.x rewrote its API and breaks the rosidl template generators with `em.TransientParseError: not enough data to read`.
+
+2. **`/usr/bin/ld: ... libpython3.12.a ... relocation R_X86_64_TPOFF32 ... can not be used when making a shared object`** while linking `rosidl_generator_py`. Root cause: a half-removed source-built Python 3.12 lived under `/usr/local` (binaries renamed `*.disabled`, but a non-PIC static `libpython3.12.a` remained). The `.venv` had been created with `home = /usr/local/bin`, so `sys.base_prefix` resolved to `/usr/local` and the build linked against that non-PIC static archive instead of the system shared `libpython3.12.so`.
+
+   The reliable fix is to **create the venv against the real system interpreter** so `base_prefix` is `/usr`:
+   ```bash
+   rm -rf .venv
+   /usr/bin/python3.12 -m venv --system-site-packages .venv
+   . .venv/bin/activate
+   ```
+   Verify before building:
+   ```bash
+   python3 -c "import sys; print(sys.base_prefix)"   # MUST print /usr, not /usr/local
+   ```
+   Also disable the stale `/usr/local` Python remnants so nothing picks them up again (requires sudo):
+   ```bash
+   sudo mv /usr/local/bin/python3.12-config /usr/local/bin/python3.12-config.disabled
+   sudo mv /usr/local/bin/python3-config    /usr/local/bin/python3-config.disabled
+   sudo mv /usr/local/lib/libpython3.12.a   /usr/local/lib/libpython3.12.a.disabled
+   ```
+
+Note: `pyserial` and `pyfingerprint` live in `~/.local` (user site), and `numpy`/`setuptools` come from the system site-packages, so none of those need reinstalling in the venv.
+
 ## Part 7: Rebuild Frontend Assets
 
 From the repo root:
@@ -223,6 +259,8 @@ source install/setup.bash
 ```
 
 If the build fails, inspect the first package that failed and make the smallest compatibility fix. The WSL2 Jazzy build did not require CMake, manifest, or source compatibility changes beyond the pseudo-Arduino startup fix already committed.
+
+On the Mint PC the source compiled cleanly, but the build was blocked twice by venv/Python environment issues (missing `catkin_pkg`, wrong `empy` version, and a venv whose `base_prefix` pointed at a stale `/usr/local` Python with a non-PIC static `libpython3.12.a`). See the "Mint PC venv gotchas" subsection under Part 6 before re-running this build.
 
 ## Part 9: Validate Simulation On Mint
 
@@ -319,6 +357,8 @@ Commit and push those Mint-specific findings on the same branch or a new handoff
 - Use Linux Mint 22 / Ubuntu Noble with ROS 2 Jazzy. Do not try to install Humble apt packages on Mint 22.
 - Use `rosdep --os=ubuntu:noble` if rosdep does not handle Mint directly.
 - Do not copy `.venv/`, `build/`, `install/`, `log/`, `node_modules/`, or frontend `dist/` from WSL2 or Humble.
+- Create the `.venv` with `/usr/bin/python3.12` explicitly and verify `python3 -c "import sys; print(sys.base_prefix)"` prints `/usr`. If it prints `/usr/local`, the venv is bound to a stale source-built Python and the `rosidl_generator_py` link step will fail with a non-PIC `libpython3.12.a` relocation error. See Part 6 "Mint PC venv gotchas".
+- Pin `empy==3.3.4` in the venv. `empy` 4.x breaks rosidl generation (`TransientParseError`). The venv also needs `catkin_pkg` and `lark` for the build.
 - Stop an existing simulation launch before starting another one; port `8080` and the pseudo-serial links are fixed by default.
 - `dashboard_sim.launch.py` is for pseudo-serial simulation, not confirmed real hardware operation.
 - Native serial permissions need the `dialout` group and a fresh login.
@@ -571,7 +611,7 @@ If any of those appear because of a manual copy, remove them before the Jazzy bu
 At this point, resume from VS Code connected to the new Ubuntu 24.04 WSL workspace and say something like:
 
 ```text
-I cloned the repo in Ubuntu 24.04 WSL2. Please read upgrade_plan.md and continue the ROS Jazzy migration from Part 5.
+I cloned the repo in Ubuntu 24.04 WSL2. Please read docs/upgrade_plan.md and continue the ROS Jazzy migration from Part 5.
 ```
 
 ## Part 5: Repo Updates For Jazzy/Noble
