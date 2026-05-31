@@ -12,6 +12,9 @@ def generate_launch_description():
     port = LaunchConfiguration("port")
     trajectory_rate_hz = LaunchConfiguration("trajectory_rate_hz")
     trajectory_steps = LaunchConfiguration("trajectory_steps")
+    initial_x = LaunchConfiguration("initial_x")
+    initial_y = LaunchConfiguration("initial_y")
+    initial_z = LaunchConfiguration("initial_z")
 
     robot_description = Command(
         [
@@ -33,12 +36,23 @@ def generate_launch_description():
             DeclareLaunchArgument("port", default_value="8080"),
             DeclareLaunchArgument("trajectory_rate_hz", default_value="10.0"),
             DeclareLaunchArgument("trajectory_steps", default_value="10"),
+            DeclareLaunchArgument("initial_x", default_value="0.0"),
+            DeclareLaunchArgument("initial_y", default_value="0.0"),
+            DeclareLaunchArgument("initial_z", default_value="-100.0"),
             Node(
                 package="delta_robot_serial",
                 executable="pseudo_arduino",
                 name="pseudo_arduino",
                 output="screen",
-                parameters=[{"baudrate": baudrate, "serial_port": serial_port}],
+                parameters=[
+                    {
+                        "baudrate": baudrate,
+                        "serial_port": serial_port,
+                        "initial_x": initial_x,
+                        "initial_y": initial_y,
+                        "initial_z": initial_z,
+                    }
+                ],
             ),
             Node(
                 package="delta_robot_serial",
