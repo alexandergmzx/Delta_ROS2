@@ -6,10 +6,10 @@ A chronological record of how the Delta ROS 2 workspace reached its current stat
 
 ### 2026-05-29 — Revive the simulation and add the dashboard
 - Revived the ROS 2 Delta robot simulation (`1461649`).
-- Added the simulation dashboard UI (`c1d459f`), then rebuilt, tuned, and extended it (`8eff7b0`, `762aeca`, `deb1f3c`).
+- Added the simulation dashboard UI (`c1d459f`) as a vanilla HTML/CSS/JS app under `delta_robot_ui/static/`, then **rebuilt it as a React/Three.js single-page app** under `delta_robot_ui/frontend/` (`8eff7b0`, `deb1f3c`), and tuned it (`762aeca`). Both frontends speak the same FastAPI `/api` + `/ws` contract; the backend serves the React build when present and falls back to the legacy static app otherwise. See [dashboard.md](dashboard.md) for the architecture.
 
 ### 2026-05-30 — Motion sync and Mint migration planning
-- Fixed dashboard motion synchronization (`9b5f4a4`).
+- Fixed dashboard motion synchronization (`9b5f4a4`) — the React in-browser robot view now tracks the live `/joint_states` pose.
 - Documented the initial Linux Mint migration setup (`db76a1b`).
 
 ### 2026-05-31 — ROS Jazzy migration and Mint bring-up
