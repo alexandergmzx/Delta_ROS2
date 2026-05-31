@@ -1,4 +1,337 @@
-# ROS Jazzy Upgrade Plan
+# ROS Jazzy Linux Mint 22 Handoff
+
+This file is the handoff for moving the Delta ROS 2 workspace from the validated Ubuntu 24.04 WSL2 migration test to the Linux Mint PC.
+
+When resuming on the Linux Mint PC, open the cloned repository in VS Code and say:
+
+```text
+Read upgrade_plan.md and continue the Linux Mint 22 ROS Jazzy handoff.
+```
+
+## Current Status
+
+Validated on 2026-05-31 in Ubuntu 24.04.4 WSL2, ROS 2 Jazzy:
+
+- Branch: `feature/dashboard-react-rebuild`.
+- Commit pushed: `ca59f8f Update Jazzy migration and simulator startup`.
+- ROS 2 Jazzy, Python 3.12, Node.js 20.20.2, and npm 10.8.2 were used.
+- `README.md` now documents Jazzy/Noble and Linux Mint 22 setup.
+- Python UI venv passed imports for `fastapi`, `uvicorn`, `yaml`, and `rclpy` when Jazzy is sourced.
+- Frontend `npm ci`, `npm run typecheck`, and `npm run build` passed.
+- `rosdep check --from-paths src --ignore-src --rosdistro jazzy` reported all system dependencies satisfied in WSL2.
+- `colcon build --symlink-install --cmake-clean-cache` passed for all four packages.
+- `ros2 launch delta_robot_ui dashboard_sim.launch.py` ran in WSL2.
+- `/joint_states`, `/ikin`, `/trajectory_plan`, dashboard HTTP GET, and dashboard `/api/move` to `{x: 0, y: 0, z: -100}` were validated.
+- The pseudo-Arduino startup pose was fixed so the simulation starts near `z=-100 mm` instead of publishing the old `0,0,0` motor-angle pose.
+
+Not yet validated:
+
+- Native Linux Mint 22 build and runtime.
+- Native RViz/GPU behavior on the Mint PC.
+- Real hardware serial on the Mint PC.
+
+## Repository Packages
+
+- `serial`: vendored C++ serial library, `ament_cmake`.
+- `delta_robot_serial`: C++ inverse kinematics service, joint-state publisher, pseudo-Arduino emulator, and trajectory action server.
+- `delta_robot_description`: URDF, meshes, RViz config, launch files, `ament_cmake` data package.
+- `delta_robot_ui`: Python/FastAPI plus React dashboard, `ament_python`.
+
+## Mint PC Goal
+
+Use Linux Mint 22, which is based on Ubuntu 24.04 Noble, with ROS 2 Jazzy. Treat this as a source-only checkout. Do not copy generated outputs from WSL2 or from the old Humble workspace.
+
+Regenerate these locally on the Mint PC:
+
+- `.venv/`
+- `build/`
+- `install/`
+- `log/`
+- `src/delta_robot_ui/frontend/node_modules/`
+- `src/delta_robot_ui/frontend/dist/`
+
+## Part 1: Prepare Linux Mint 22
+
+Run these on the Linux Mint PC.
+
+Check the OS basis first:
+
+```bash
+. /etc/os-release
+echo "PRETTY_NAME=$PRETTY_NAME"
+echo "VERSION_CODENAME=$VERSION_CODENAME"
+echo "UBUNTU_CODENAME=${UBUNTU_CODENAME:-}"
+```
+
+Expected: Mint 22 with Ubuntu codename `noble`. If `UBUNTU_CODENAME` is empty, use `noble` explicitly in commands that need an Ubuntu codename.
+
+Install base tools and enable required repositories:
+
+```bash
+sudo apt update
+sudo apt install -y locales software-properties-common curl git build-essential cmake python3-pip python3-venv python3-colcon-common-extensions python3-rosdep socat
+sudo locale-gen en_US en_US.UTF-8
+sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+export LANG=en_US.UTF-8
+sudo add-apt-repository universe
+sudo apt update
+```
+
+## Part 2: Install ROS 2 Jazzy On Mint 22
+
+Install the ROS apt source package using the Ubuntu Noble codename:
+
+```bash
+export ROS_APT_SOURCE_VERSION=$(curl -s https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest | grep -F "tag_name" | awk -F'"' '{print $4}')
+. /etc/os-release
+export ROS_OS_CODENAME=${UBUNTU_CODENAME:-noble}
+curl -L -o /tmp/ros2-apt-source.deb "https://github.com/ros-infrastructure/ros-apt-source/releases/download/${ROS_APT_SOURCE_VERSION}/ros2-apt-source_${ROS_APT_SOURCE_VERSION}.${ROS_OS_CODENAME}_all.deb"
+sudo dpkg -i /tmp/ros2-apt-source.deb
+sudo apt update
+sudo apt full-upgrade -y
+sudo apt install -y ros-jazzy-desktop ros-dev-tools
+```
+
+Source and verify Jazzy:
+
+```bash
+source /opt/ros/jazzy/setup.bash
+printenv ROS_DISTRO
+ros2 --help >/dev/null && echo "ROS 2 CLI OK"
+```
+
+Expected `ROS_DISTRO`:
+
+```text
+jazzy
+```
+
+Optional shell convenience:
+
+```bash
+grep -qxF 'source /opt/ros/jazzy/setup.bash' ~/.bashrc || echo 'source /opt/ros/jazzy/setup.bash' >> ~/.bashrc
+```
+
+Initialize rosdep if needed:
+
+```bash
+sudo rosdep init 2>/dev/null || true
+rosdep update
+```
+
+## Part 3: Install Node.js 20 LTS
+
+```bash
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+node --version
+npm --version
+```
+
+Expected Node major version: 20 or newer.
+
+Avoid conda or pyenv for this workspace. The project venv should be created with `--system-site-packages` so it can see apt-installed ROS Python packages such as `rclpy`.
+
+## Part 4: Clone The Validated Branch
+
+Create the workspace under the Mint Linux filesystem, not on a mounted Windows or network path:
+
+```bash
+mkdir -p ~/ros2_ws
+cd ~/ros2_ws
+git clone git@github.com:alexandergmzx/Delta_ROS2.git colcon_ws
+cd colcon_ws
+git checkout feature/dashboard-react-rebuild
+git pull --ff-only
+git log -1 --oneline
+```
+
+Expected latest commit:
+
+```text
+ca59f8f Update Jazzy migration and simulator startup
+```
+
+If SSH is not configured on the Mint PC, use HTTPS instead:
+
+```bash
+git clone https://github.com/alexandergmzx/Delta_ROS2.git colcon_ws
+```
+
+Remove any generated outputs if this was copied manually instead of cloned:
+
+```bash
+rm -rf .venv build install log src/delta_robot_ui/frontend/node_modules src/delta_robot_ui/frontend/dist
+```
+
+## Part 5: Resolve Dependencies
+
+From the repo root:
+
+```bash
+source /opt/ros/jazzy/setup.bash
+rosdep update
+rosdep install --from-paths src --ignore-src -r -y --rosdistro jazzy --os=ubuntu:noble
+```
+
+The `--os=ubuntu:noble` flag is intentional for Linux Mint 22. Use it if rosdep identifies Mint instead of Ubuntu Noble.
+
+## Part 6: Recreate The Python UI Environment
+
+From the repo root:
+
+```bash
+source /opt/ros/jazzy/setup.bash
+python3 -m venv --system-site-packages .venv
+. .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements-ui.txt
+python - <<'PY'
+import fastapi
+import uvicorn
+import yaml
+import rclpy
+print('Python UI environment OK')
+PY
+```
+
+If a Python package fails on Python 3.12, pin the minimum working version in `requirements-ui.txt` only after confirming the failing package.
+
+## Part 7: Rebuild Frontend Assets
+
+From the repo root:
+
+```bash
+cd src/delta_robot_ui/frontend
+npm ci
+npm run typecheck
+npm run build
+cd ../../..
+```
+
+The frontend `dist/` directory should be generated fresh on the Mint PC.
+
+## Part 8: Build The ROS Workspace
+
+From the repo root:
+
+```bash
+source /opt/ros/jazzy/setup.bash
+. .venv/bin/activate
+colcon build --symlink-install --cmake-clean-cache
+source install/setup.bash
+```
+
+If the build fails, inspect the first package that failed and make the smallest compatibility fix. The WSL2 Jazzy build did not require CMake, manifest, or source compatibility changes beyond the pseudo-Arduino startup fix already committed.
+
+## Part 9: Validate Simulation On Mint
+
+Stop any older simulation launch before starting a new one. The simulation uses fixed pseudo-serial links and dashboard port `8080` by default.
+
+From the repo root:
+
+```bash
+source /opt/ros/jazzy/setup.bash
+. .venv/bin/activate
+source install/setup.bash
+ros2 launch delta_robot_ui dashboard_sim.launch.py
+```
+
+Open:
+
+```text
+http://127.0.0.1:8080
+```
+
+Verify:
+
+- `pseudo_arduino` starts.
+- `delta_joint_pub` publishes `/joint_states`.
+- The first live state is near `x=0`, `y=0`, `z=-100 mm` before running a sequence.
+- `robot_state_publisher` starts.
+- RViz opens on the Mint desktop.
+- `/ikin` service is available.
+- `/trajectory_plan` action is available.
+- Dashboard loads and can run a saved sequence.
+
+Useful checks in another terminal:
+
+```bash
+source /opt/ros/jazzy/setup.bash
+source ~/ros2_ws/colcon_ws/install/setup.bash
+ros2 topic list
+ros2 service list | grep /ikin
+ros2 action list | grep /trajectory_plan
+ros2 topic echo --once /joint_states
+ros2 interface show delta_robot_serial/srv/Ikin
+ros2 interface show delta_robot_serial/action/PosTraj
+curl -fsS http://127.0.0.1:8080/api/state | python3 -m json.tool | head -n 80
+```
+
+If RViz has graphics trouble on the Mint PC, first check native GPU drivers. As a workaround, try:
+
+```bash
+LIBGL_ALWAYS_SOFTWARE=true rviz2
+```
+
+or:
+
+```bash
+QT_QPA_PLATFORM=xcb rviz2
+```
+
+## Part 10: Optional Hardware Serial On Mint
+
+Simulation should pass first. Hardware is a second layer.
+
+Check connected serial devices:
+
+```bash
+lsusb
+ls -l /dev/ttyACM* /dev/ttyUSB* 2>/dev/null
+```
+
+If access is denied, add the user to `dialout`, then log out and back in:
+
+```bash
+sudo usermod -a -G dialout $USER
+```
+
+Important: `dashboard_sim.launch.py` is the pseudo-Arduino simulation launch. It starts `pseudo_arduino` and creates `~/socatpty1` plus `~/socatpty2`. Before commanding real hardware, validate or add a hardware launch path that does not start `pseudo_arduino` and that points `delta_joint_pub` plus `ikin_server` at the real serial device.
+
+Do not connect real hardware until the intended hardware launch path is clear and the serial device path is confirmed.
+
+## Part 11: What To Update On Mint
+
+After the Mint PC passes setup and validation, update this file with:
+
+- Mint version and kernel/GPU notes.
+- ROS Jazzy, Python, Node, and npm versions.
+- Whether `rosdep --os=ubuntu:noble` was required.
+- `colcon build` result.
+- Dashboard/RViz simulation result.
+- Any real hardware serial findings.
+
+Commit and push those Mint-specific findings on the same branch or a new handoff branch.
+
+## Known Watch Points
+
+- Use Linux Mint 22 / Ubuntu Noble with ROS 2 Jazzy. Do not try to install Humble apt packages on Mint 22.
+- Use `rosdep --os=ubuntu:noble` if rosdep does not handle Mint directly.
+- Do not copy `.venv/`, `build/`, `install/`, `log/`, `node_modules/`, or frontend `dist/` from WSL2 or Humble.
+- Stop an existing simulation launch before starting another one; port `8080` and the pseudo-serial links are fixed by default.
+- `dashboard_sim.launch.py` is for pseudo-serial simulation, not confirmed real hardware operation.
+- Native serial permissions need the `dialout` group and a fresh login.
+- RViz behavior depends on the Mint PC GPU/driver setup.
+
+## Online Sources Checked
+
+- ROS Jazzy release notes: `https://docs.ros.org/en/jazzy/Releases/Release-Jazzy-Jalisco.html`
+- ROS Jazzy Ubuntu deb install: `https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html`
+- ROS Jazzy Ubuntu source setup notes: `https://docs.ros.org/en/jazzy/Installation/Alternatives/Ubuntu-Development-Setup.html`
+- ROS installation troubleshooting: `https://docs.ros.org/en/jazzy/How-To-Guides/Installation-Troubleshooting.html`
+- Multiple RMW implementations: `https://docs.ros.org/en/jazzy/How-To-Guides/Working-with-multiple-RMW-implementations.html`
+- Linux Mint 22 release notes: `https://linuxmint.com/rel_wilma.php`# ROS Jazzy Upgrade Plan
 
 This note is a handoff for migrating this workspace from ROS 2 Humble on Ubuntu 22.04/Jammy to ROS 2 Jazzy on Ubuntu 24.04/Noble. The immediate goal is to test the migration first on this Windows PC using a separate Ubuntu 24.04 WSL2 distro, then repeat the same setup on Linux Mint 22.
 
