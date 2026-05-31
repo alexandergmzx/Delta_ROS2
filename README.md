@@ -186,3 +186,7 @@ Waypoint CSV files use this header:
 name,x,y,z,dwell_seconds
 Center hover,0,0,-100,0.5
 ```
+
+## Acknowledgments
+
+The delta-robot physics, the inverse-kinematics math, and the Arduino firmware/pseudo-Arduino emulation were developed together with **Armando Rodriguez** ([@armandorodb](https://github.com/armandorodb)), robotics engineer.
