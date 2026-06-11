@@ -1,22 +1,29 @@
-import { Activity, CircleAlert, Radio, RadioTower } from 'lucide-react';
+import { Activity, CircleAlert, Play, Radio, RadioTower } from 'lucide-react';
 
 import { useDashboardStore } from '../store/dashboardStore';
 
 export function StatusBar() {
+  const mode = useDashboardStore((state) => state.mode);
   const connection = useDashboardStore((state) => state.connection);
   const health = useDashboardStore((state) => state.snapshot?.health);
   const sequence = useDashboardStore((state) => state.snapshot?.sequence);
 
   return (
-    <div className="status-bar" aria-label="ROS status">
-      <StatusPill
-        active={connection === 'live'}
-        icon={connection === 'live' ? RadioTower : Radio}
-        label={connection === 'live' ? 'Live' : connection === 'connecting' ? 'Connecting' : 'Offline'}
-      />
-      <StatusPill active={Boolean(health?.joint_states)} icon={Activity} label="Joint states" />
-      <StatusPill active={Boolean(health?.ikin_service)} icon={RadioTower} label="IK" />
-      <StatusPill active={Boolean(health?.trajectory_action)} icon={RadioTower} label="Action" />
+    <div className="status-bar" aria-label={mode === 'standalone' ? 'Simulator status' : 'ROS status'}>
+      {mode === 'standalone' ? (
+        <StatusPill active icon={Play} label="Demo mode" tone="amber" />
+      ) : (
+        <>
+          <StatusPill
+            active={connection === 'live'}
+            icon={connection === 'live' ? RadioTower : Radio}
+            label={connection === 'live' ? 'Live' : connection === 'connecting' ? 'Connecting' : 'Offline'}
+          />
+          <StatusPill active={Boolean(health?.joint_states)} icon={Activity} label="Joint states" />
+          <StatusPill active={Boolean(health?.ikin_service)} icon={RadioTower} label="IK" />
+          <StatusPill active={Boolean(health?.trajectory_action)} icon={RadioTower} label="Action" />
+        </>
+      )}
       <StatusPill active={Boolean(sequence?.running)} icon={CircleAlert} label={sequence?.phase ?? 'Idle'} tone="amber" />
     </div>
   );

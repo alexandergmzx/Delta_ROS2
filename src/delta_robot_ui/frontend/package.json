@@ -5,9 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
+    "dev:standalone": "vite --host 0.0.0.0 --mode standalone",
     "build": "tsc -b && vite build",
+    "build:standalone": "tsc -b && vite build --mode standalone",
     "preview": "vite preview --host 0.0.0.0",
-    "typecheck": "tsc -b --pretty"
+    "preview:standalone": "vite preview --host 0.0.0.0 --mode standalone",
+    "typecheck": "tsc -b --pretty",
+    "sync:site": "npm run build:standalone && rm -rf \"${AL_FOLIO_DIR:-/home/alexmint/Development/al-folio}/assets/delta_sim\" && cp -r dist-standalone \"${AL_FOLIO_DIR:-/home/alexmint/Development/al-folio}/assets/delta_sim\""
   },
   "dependencies": {
     "@react-three/drei": "^9.122.0",
@@ -19,6 +23,7 @@
     "zustand": "^5.0.2"
   },
   "devDependencies": {
+    "@rollup/plugin-yaml": "^5.0.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@types/three": "^0.171.0",

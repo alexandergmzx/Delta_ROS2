@@ -15,6 +15,7 @@ __pycache__/
 # Frontend artifacts
 src/delta_robot_ui/frontend/node_modules/
 src/delta_robot_ui/frontend/dist/
+src/delta_robot_ui/frontend/dist-standalone/
 
 # ROS/runtime artifacts
 .ros/

@@ -11,6 +11,7 @@ const BASE_RADIUS = 1.75;
 const PLATFORM_RADIUS = 0.55;
 
 export function RobotScene() {
+  const mode = useDashboardStore((state) => state.mode);
   const position = useDashboardStore((state) => state.snapshot?.state.position_mm ?? null);
   const target = useDashboardStore((state) => state.target);
   const sequenceFeedback = useDashboardStore((state) => state.snapshot?.sequence.feedback ?? null);
@@ -27,8 +28,14 @@ export function RobotScene() {
         <OrbitControls makeDefault enableDamping dampingFactor={0.08} maxDistance={8} minDistance={2.2} />
       </Canvas>
       <div className="scene-overlay">
-        <span>Live View</span>
-        <strong>{position ? `${position.x.toFixed(1)}, ${position.y.toFixed(1)}, ${position.z.toFixed(1)} mm` : 'Awaiting ROS state'}</strong>
+        <span>{mode === 'standalone' ? 'Demo View' : 'Live View'}</span>
+        <strong>
+          {position
+            ? `${position.x.toFixed(1)}, ${position.y.toFixed(1)}, ${position.z.toFixed(1)} mm`
+            : mode === 'standalone'
+              ? 'Starting simulator'
+              : 'Awaiting ROS state'}
+        </strong>
       </div>
     </div>
   );

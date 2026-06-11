@@ -80,3 +80,20 @@ export type SnapshotEvent =
       type: 'snapshot';
       payload: DashboardSnapshot;
     };
+
+export type SocketLike = {
+  addEventListener(type: 'open' | 'close' | 'error', listener: () => void): void;
+  close(): void;
+};
+
+export type DashboardApi = {
+  getSnapshot: () => Promise<DashboardSnapshot>;
+  getPresets: () => Promise<Preset[]>;
+  getTrajectoryConfig: () => Promise<TrajectoryConfig>;
+  setTrajectoryConfig: (trajectoryRateHz: number) => Promise<TrajectoryConfig>;
+  checkTarget: (target: Target) => Promise<TargetCheckResult>;
+  moveTarget: (target: Target) => Promise<ApiAccepted>;
+  runSequence: (waypoints: Waypoint[]) => Promise<ApiAccepted>;
+  stopSequence: () => Promise<ApiAccepted>;
+  openDashboardSocket: (onSnapshot: (snapshot: DashboardSnapshot) => void) => SocketLike;
+};

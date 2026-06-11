@@ -1,7 +1,9 @@
 import { create } from 'zustand';
 
 import {
+  activateStandaloneFallback,
   checkTarget,
+  getMode,
   getPresets,
   getSnapshot,
   getTrajectoryConfig,
@@ -10,13 +12,15 @@ import {
   runSequence,
   setTrajectoryConfig,
   stopSequence,
-} from '../api/client';
-import type { DashboardSnapshot, Preset, SavedSequence, Target, TargetCheckResult, TrajectoryConfig, Waypoint } from '../api/types';
+} from '../api';
+import type { DashboardMode } from '../api';
+import type { DashboardSnapshot, Preset, SavedSequence, SocketLike, Target, TargetCheckResult, TrajectoryConfig, Waypoint } from '../api/types';
 
 type ConnectionState = 'connecting' | 'live' | 'offline';
 type WaypointField = 'name' | keyof Target | 'dwell_seconds';
 
 type DashboardStore = {
+  mode: DashboardMode;
   snapshot: DashboardSnapshot | null;
   presets: Preset[];
   savedSequences: SavedSequence[];
@@ -55,12 +59,13 @@ type DashboardStore = {
   clearError: () => void;
 };
 
-let liveSocket: WebSocket | null = null;
+let liveSocket: SocketLike | null = null;
 
 const initialTarget: Target = { x: 0, y: 0, z: -100 };
 const savedSequencesKey = 'delta_robot_dashboard_saved_sequences';
 
 export const useDashboardStore = create<DashboardStore>((set, get) => ({
+  mode: getMode(),
   snapshot: null,
   presets: [],
   savedSequences: loadSavedSequences(),
@@ -91,6 +96,14 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
         error: null,
       });
     } catch (error) {
+      // fetch throws TypeError only when no backend answered at all; HTTP errors
+      // mean the server is up (maybe with ROS down) and must keep live mode.
+      if (get().mode === 'ros' && error instanceof TypeError && activateStandaloneFallback()) {
+        set({ mode: 'standalone' });
+        get().connectLive();
+        await get().loadInitial();
+        return;
+      }
       set({ error: errorMessage(error) });
     }
   },
