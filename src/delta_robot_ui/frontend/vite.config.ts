@@ -11,8 +11,11 @@ export default defineConfig(({ command, mode }) => ({
     outDir: mode === 'standalone' ? 'dist-standalone' : 'dist',
     rollupOptions: {
       output: {
-        entryFileNames: 'assets/[name].js',
-        chunkFileNames: 'assets/[name].js',
+        // .min.js in standalone mode so the website's jekyll-terser plugin
+        // (which skips *.min.js and has no exclude option) leaves the
+        // already-minified bundle alone.
+        entryFileNames: mode === 'standalone' ? 'assets/[name].min.js' : 'assets/[name].js',
+        chunkFileNames: mode === 'standalone' ? 'assets/[name].min.js' : 'assets/[name].js',
         assetFileNames: 'assets/[name][extname]',
       },
     },
